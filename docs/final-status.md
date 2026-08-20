@@ -36,5 +36,13 @@
 | GitHub Comment Action | PARTIAL | Mocked tests | Real write skipped intentionally |
 | Audit Log | WORKING | Audit API and tests | Safe summaries, no secrets |
 | Settings | WORKING | Settings API/UI/tests | Non-secret configuration only |
-| OpenAI Provider | BLOCKED | Env/config check | `OPENAI_API_KEY` not configured; deterministic fallback verified |
-| PostgreSQL/pgvector | BLOCKED | Docker check | Docker unavailable; SQLite/local vector fallback verified |
+| Model Gateway | WORKING | Unit tests and `/api/platform/model-gateway` | Ollama/Groq/OpenRouter/OpenAI config probes plus deterministic fallback |
+| ML Model Registry | WORKING | Unit tests and `/api/platform/ml-models` | Honest model cards report insufficient training data instead of fake metrics |
+| GitHub Webhooks | WORKING | Signature/unit tests | Signed events normalize into repository events and local queue jobs |
+| Local Job Queue | WORKING | Unit tests | Deterministic enqueue, dedupe, retry, and failure handling |
+| Code Intelligence | WORKING | Unit tests and `/api/platform/code/analyze` | Bounded local source scan, symbols, static features, and code graph foundation |
+| Graph Store | WORKING | Unit tests | Local graph backend for Repository/File/Symbol relationships |
+| Platform UI | WORKING | Frontend lint/typecheck/build and route QA | Models, Automation, and System views expose platform status |
+| Production Containers | PARTIAL | Dockerfile/compose/CI definitions | Build validation depends on Docker availability |
+| OpenAI Provider | OPTIONAL | Env/config check | `OPENAI_API_KEY` not configured; deterministic fallback verified |
+| PostgreSQL/pgvector | PARTIAL | Docker compose definition | Production profile documented; SQLite/local vector fallback verified |

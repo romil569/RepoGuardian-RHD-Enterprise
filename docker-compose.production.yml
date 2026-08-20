@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: repoguardian
+      POSTGRES_USER: repoguardian
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repoguardian -d repoguardian"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://repoguardian:${POSTGRES_PASSWORD}@postgres:5432/repoguardian
+      DATA_BACKEND: postgresql
+      VECTOR_BACKEND: pgvector
+      FRONTEND_URL: ${FRONTEND_URL}
+      ALLOWED_WRITE_REPOSITORY: ${ALLOWED_WRITE_REPOSITORY:-romil569/RepoGuardian-Demo}
+      REQUIRE_HUMAN_APPROVAL: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.worker
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://repoguardian:${POSTGRES_PASSWORD}@postgres:5432/repoguardian
+      DATA_BACKEND: postgresql
+      VECTOR_BACKEND: pgvector
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:

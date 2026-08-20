@@ -334,3 +334,23 @@ export type RHDOnboardingResponse = {
   initial_scan: RHDInitialScan;
   review: RHDReview;
 };
+
+export type ModelProviderStatus = {
+  provider: string;
+  model: string;
+  configured: boolean;
+  circuit_open: boolean;
+  successes: number;
+  failures: number;
+};
+
+export type MLModelCard = {
+  name: string;
+  task: string;
+  status: string;
+  training_rows: number;
+  test_rows: number;
+  metrics: Record<string, number | string>;
+  fallback: string;
+  version: string;
+};

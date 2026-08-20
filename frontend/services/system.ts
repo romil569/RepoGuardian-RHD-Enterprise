@@ -12,6 +12,8 @@ import type {
   Release,
   Repository,
   RepositoryHealth,
+  MLModelCard,
+  ModelProviderStatus,
   RHDInitialScan,
   RHDOnboardingResponse,
   RHDQueryResponse,
@@ -146,4 +148,12 @@ export function fetchRHDReview(repositoryId: number): Promise<RHDReview> {
 
 export function askRHD(repositoryId: number, question: string, sessionContext?: Record<string, unknown>): Promise<RHDQueryResponse> {
   return request<RHDQueryResponse>("/api/rhd/query", { method: "POST", body: JSON.stringify({ repository_id: repositoryId, question, session_context: sessionContext }) });
+}
+
+export function fetchModelGatewayStatus(): Promise<{ providers: ModelProviderStatus[]; priority: string[] }> {
+  return request<{ providers: ModelProviderStatus[]; priority: string[] }>("/api/platform/model-gateway");
+}
+
+export function fetchMLModels(): Promise<{ models: MLModelCard[] }> {
+  return request<{ models: MLModelCard[] }>("/api/platform/ml-models");
 }

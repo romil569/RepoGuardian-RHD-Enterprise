@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ClipboardList, Command, FileClock, GitBranch, Home, ListChecks, SearchCheck, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, Bot, ClipboardList, Command, FileClock, GitBranch, Home, ListChecks, RadioTower, SearchCheck, ServerCog, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,12 +21,15 @@ const sections: Array<{ title: string; items: Array<{ href: string; label: strin
     items: [
       { href: "/health", label: "Repository Health", icon: Activity, detail: "Risk dimensions" },
       { href: "/weekly", label: "Weekly Brief", icon: FileClock, detail: "Maintainer briefing" },
-      { href: "/evaluation", label: "Evaluation", icon: ShieldCheck, detail: "Feedback quality" }
+      { href: "/evaluation", label: "Evaluation", icon: ShieldCheck, detail: "Feedback quality" },
+      { href: "/models", label: "Models", icon: Bot, detail: "Provider and ML cards" }
     ]
   },
   {
     title: "Operations",
     items: [
+      { href: "/automation", label: "Automation", icon: RadioTower, detail: "Event-driven jobs" },
+      { href: "/system", label: "System", icon: ServerCog, detail: "Runtime foundations" },
       { href: "/audit-log", label: "Audit Log", icon: FileClock, detail: "Safe event trail" },
       { href: "/settings", label: "Settings", icon: Settings, detail: "Policy and runtime" }
     ]

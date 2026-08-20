@@ -48,6 +48,7 @@ GitHub -> Sync / Monitoring -> Database -> Repository Knowledge Index -> Project
 - Issues / Investigations: run investigations, inspect evidence, confidence, telemetry, recommendations, feedback
 - Review Queue: preview, approve, reject, and execute policy-validated recommendations
 - Repository Health / Weekly Brief / Evaluation: analytics from stored repository data
+- Models / Automation / System: provider status, ML model cards, event automation, and platform foundations
 - Audit Log: trace recommendations, approvals, rejections, feedback, and actions
 - Settings: non-secret runtime and safety policy configuration
 
@@ -92,8 +93,8 @@ Important settings are documented in `.env.example` and `backend/.env.example`.
 - `DATA_BACKEND`: `sqlite`
 - `VECTOR_BACKEND`: `local`
 - `DEMO_GITHUB_REPOSITORY`: `romil569/RepoGuardian-Demo`
-- `OPENAI_API_KEY`: optional; leave unset for deterministic mode
-- `AI_PROVIDER_MODE`: `auto`, `deterministic`, or `openai`
+- `AI_PROVIDER_PRIORITY`: optional provider order across Ollama, Groq, OpenRouter, OpenAI, and deterministic fallback
+- `AI_PROVIDER_MODE`: `auto`, `deterministic`, `openai`, `ollama`, `groq`, or `openrouter`
 - `REQUIRE_HUMAN_APPROVAL`: defaults to `true`
 - `ALLOWED_WRITE_REPOSITORY`: defaults to `romil569/RepoGuardian-Demo`
 
