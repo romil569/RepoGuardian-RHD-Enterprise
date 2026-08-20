@@ -234,3 +234,7 @@ def test_audit_log_and_settings_validation(db_session):
     bad_settings = Settings(allowed_write_repository="not-a-repo")
     with pytest.raises(ValueError):
         bad_settings.validate_policy()
+
+    bad_ai_mode = Settings(ai_provider_mode="unsafe")
+    with pytest.raises(ValueError):
+        bad_ai_mode.validate_policy()

@@ -94,7 +94,9 @@ export function OverviewDashboard() {
             <dl className="mt-3 space-y-2 text-sm">
               <Runtime label="Database" value={system?.database ?? "--"} />
               <Runtime label="Vector" value={system?.vector_backend ?? "--"} />
-              <Runtime label="AI" value={system?.ai_provider ?? "--"} />
+              <Runtime label="Live AI Provider" value={system?.live_ai_provider ?? system?.ai_provider ?? "--"} />
+              <Runtime label="Deterministic Intelligence" value={system?.deterministic_intelligence ?? "--"} />
+              <Runtime label="AI Mode" value={system?.ai_provider_mode ?? "--"} />
             </dl>
           </div>
         </div>

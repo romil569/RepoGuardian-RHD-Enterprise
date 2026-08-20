@@ -74,6 +74,20 @@ Generated: 2026-08-20
 - Safe policy controls: implemented and exposed through non-secret settings
 - Mocked GitHub label/comment execution: tested
 
+## Final Prompt 5 Status
+
+- AI provider mode: `auto`
+- Live AI provider: not configured
+- Deterministic intelligence: active and live-tested
+- Docker/PostgreSQL/pgvector: blocked because Docker CLI is unavailable
+- SQLite/local vector fallback: working and final-demo verified
+- Fresh Alembic migration: verified from zero through `0004_prompt4_actions_audit`
+- Startup script: `scripts/start-dev.ps1`
+- Stop script: `scripts/stop-dev.ps1`
+- Doctor script: `scripts/doctor.ps1`
+- CMD launcher: `scripts/start-dev.cmd`
+- External local AI key file supported by startup script: `C:\Users\HP\Desktop\RepoGuardian.env`
+
 ## Prompt 2 Frontend Status
 
 - Dependencies installed
@@ -155,6 +169,20 @@ Generated: 2026-08-20
 - Audit log: recommendation created, approved, rejected, and executed events verified
 - Real GitHub write validation: skipped to avoid unnecessary demo repository noise; mocked label/comment execution is covered by tests
 
+## Final Prompt 5 Live Demo Results
+
+- System status: backend `ok`, database `ok`, data backend `sqlite`, vector backend `local`, live AI provider `not_configured`, deterministic intelligence `active`
+- Sync duration: about `18279 ms`, 21 documents indexed
+- RAG query duration: about `65 ms`, 3 results returned
+- Investigation timings:
+  - Issue `#3`: about `100 ms`, `REQUEST_MORE_INFORMATION`
+  - Issue `#5`: about `108 ms`, `NO_ACTION`
+  - Issue `#8`: about `114 ms`, `MARK_AS_POSSIBLE_DUPLICATE`
+  - Issue `#4`: about `119 ms`, `ESCALATE_FOR_SECURITY_REVIEW`
+- Review queue: pending recommendations visible
+- Audit log: events visible
+- Frontend routes verified: `/`, `/repositories`, `/issues`, `/investigations`, `/review-queue`, `/health`, `/weekly`, `/evaluation`, `/audit-log`, `/settings`
+
 ## Safety Checks
 
 - `.env`, `backend/.env`, and `frontend/.env.local` are ignored by Git
@@ -191,6 +219,13 @@ Generated: 2026-08-20
 - Prompt 4 live review queue API
 - Prompt 4 live approval/rejection workflow
 - Prompt 4 live audit log API
+- Final Prompt 5 backend `pytest`: 25 passed
+- Final Prompt 5 frontend lint
+- Final Prompt 5 frontend typecheck
+- Final Prompt 5 frontend production build
+- Final Prompt 5 doctor script
+- Final Prompt 5 route checks
+- Final Prompt 5 live end-to-end API demo
 - Git ignore safety check
 - Secret-pattern scan
 - GitHub repository/count verification

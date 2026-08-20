@@ -6,6 +6,9 @@ export type SystemStatus = {
   data_backend?: string;
   vector_backend?: string;
   ai_provider?: string;
+  ai_provider_mode?: string;
+  live_ai_provider?: string;
+  deterministic_intelligence?: string;
 };
 
 export type Repository = {

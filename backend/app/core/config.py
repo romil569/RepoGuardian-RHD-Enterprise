@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     vector_backend: str = "local"
     github_token: str | None = None
     openai_api_key: str | None = None
+    ai_provider_mode: str = "auto"
     demo_github_repository: str | None = None
     app_env: str = "development"
     frontend_url: str = "http://localhost:3000"
@@ -46,6 +47,8 @@ class Settings(BaseSettings):
             raise ValueError("Duplicate comment threshold must be between 0 and 1")
         if not 0 <= self.needs_info_comment_threshold <= 100:
             raise ValueError("Needs-info comment threshold must be between 0 and 100")
+        if self.ai_provider_mode not in {"auto", "deterministic", "openai"}:
+            raise ValueError("AI provider mode must be auto, deterministic, or openai")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
