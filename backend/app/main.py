@@ -10,6 +10,7 @@ from app.api.routes.analytics import router as analytics_router
 from app.api.routes.audit_log import router as audit_log_router
 from app.api.routes.issues import router as issues_router
 from app.api.routes.investigations import router as investigations_router
+from app.api.routes.platform import router as platform_router
 from app.api.routes.repositories import router as repositories_router
 from app.api.routes.rhd import router as rhd_router
 from app.api.routes.settings import router as settings_router
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(system_router, prefix="/api/system", tags=["system"])
     app.include_router(repositories_router)
     app.include_router(rhd_router)
+    app.include_router(platform_router)
     app.include_router(issues_router)
     app.include_router(investigations_router)
     app.include_router(analytics_router)
