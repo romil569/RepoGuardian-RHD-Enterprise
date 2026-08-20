@@ -21,7 +21,7 @@ from app.db.base import Base  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Safely migrate RepoGuardian SQLite rows into PostgreSQL.")
     parser.add_argument("--sqlite", required=True, help="Source SQLite database path.")
-    parser.add_argument("--postgres-url", required=True, help="Destination postgresql+psycopg SQLAlchemy URL.")
+    parser.add_argument("--postgres-url", required=True, help="Destination PostgreSQL URL.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and copy inside a transaction that is rolled back.")
     parser.add_argument("--verify-only", action="store_true", help="Only compare source/destination row counts.")
     return parser.parse_args()
@@ -37,7 +37,8 @@ def source_engine(path: str) -> Engine:
 def destination_engine(url: str) -> Engine:
     if not url.startswith("postgresql"):
         raise SystemExit("Destination must be a PostgreSQL SQLAlchemy URL.")
-    return create_engine(url, pool_pre_ping=True)
+    sqlalchemy_url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return create_engine(sqlalchemy_url, pool_pre_ping=True)
 
 
 def coerce_value(column: Any, value: Any) -> Any:

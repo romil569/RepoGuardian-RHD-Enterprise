@@ -103,6 +103,12 @@ class Settings(BaseSettings):
         if self.job_timeout_seconds < 1:
             raise ValueError("Job timeout must be positive")
 
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return self.database_url
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
