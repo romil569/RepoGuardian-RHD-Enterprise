@@ -115,7 +115,7 @@ def advance_rhd_job(db: Session, job_id: str) -> dict[str, Any]:
 
     job.status = "RUNNING"
     job.started_at = job.started_at or datetime.now(UTC)
-    job.lease_until = datetime.now(UTC) + timedelta(seconds=settings.job_timeout_seconds)
+    job.lease_until = datetime.now(UTC) + timedelta(seconds=min(settings.job_timeout_seconds, settings.serverless_job_lease_seconds))
     job.attempts += 1
     db.commit()
     db.refresh(job)

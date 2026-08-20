@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     max_public_issues: int = 35
     max_public_prs: int = 35
     max_public_releases: int = 15
+    max_public_comments_per_issue: int = 0
+    serverless_job_lease_seconds: int = 45
     max_rhd_steps: int = 12
     max_retrieval_results: int = 8
     max_code_file_bytes: int = 200_000
@@ -120,6 +122,8 @@ class Settings(BaseSettings):
             raise ValueError("Database pool sizing must be bounded and positive")
         if self.max_public_issues < 1 or self.max_public_prs < 1 or self.max_public_releases < 1:
             raise ValueError("Public GitHub sync limits must be positive")
+        if self.max_public_comments_per_issue < 0:
+            raise ValueError("Public comments per issue cannot be negative")
 
     @property
     def sqlalchemy_database_url(self) -> str:

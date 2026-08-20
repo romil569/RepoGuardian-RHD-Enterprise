@@ -152,9 +152,11 @@ def sync_repository(db: Session, repository_id: int, github: GitHubCliService | 
         issue, status = _upsert_issue(db, repo.id, item)
         db.flush()
         counts[f"issues_{status}"] += 1
-        for comment in github.get_issue_comments(repo.full_name, issue.github_issue_number):
-            comment_status = _upsert_comment(db, repo.id, issue.id, comment)
-            counts[f"comments_{comment_status}"] += 1
+        if not settings.public_analysis_mode or settings.max_public_comments_per_issue:
+            comments = github.get_issue_comments(repo.full_name, issue.github_issue_number)
+            for comment in comments[: settings.max_public_comments_per_issue or None]:
+                comment_status = _upsert_comment(db, repo.id, issue.id, comment)
+                counts[f"comments_{comment_status}"] += 1
     for item in github.get_pull_requests(repo.full_name, limit=pr_limit):
         _, status = _upsert_pr(db, repo.id, item)
         counts[f"pull_requests_{status}"] += 1
