@@ -19,6 +19,16 @@ Connect a GitHub repository. RHD investigates its issues, pull requests, source 
 
 RHD analyzes automatically. RHD recommends automatically. Humans authorize external actions.
 
+## Live Application
+
+Public web app: https://repoguardian-rhd.vercel.app
+
+FastAPI: https://repoguardian-rhd-api.vercel.app
+
+API docs: https://repoguardian-rhd-api.vercel.app/docs
+
+Architecture: https://repoguardian-rhd.vercel.app/architecture
+
 ## Architecture
 
 ```mermaid

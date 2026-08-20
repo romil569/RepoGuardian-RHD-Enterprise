@@ -1,6 +1,10 @@
 # Managed Cloud Deployment
 
-Status: `VERCEL_NEON_READY_FOR_AUTHORIZATION`.
+Status: `VERCEL_NEON_DEPLOYED`.
+
+Live public app: https://repoguardian-rhd.vercel.app
+
+Live API: https://repoguardian-rhd-api.vercel.app
 
 Primary cloud target:
 

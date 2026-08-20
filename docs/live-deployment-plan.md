@@ -1,6 +1,13 @@
 # Live Deployment Plan
 
-Status: `VERCEL_AUTHORIZATION_REQUIRED`.
+Status: `PUBLIC_WEB_DEPLOYED`.
+
+## Live URLs
+
+- Public web app: https://repoguardian-rhd.vercel.app
+- FastAPI: https://repoguardian-rhd-api.vercel.app
+- API docs: https://repoguardian-rhd-api.vercel.app/docs
+- Architecture: https://repoguardian-rhd.vercel.app/architecture
 
 ## Monorepo Paths
 
