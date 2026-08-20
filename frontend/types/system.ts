@@ -354,3 +354,21 @@ export type MLModelCard = {
   fallback: string;
   version: string;
 };
+
+export type RHDToolSpec = {
+  name: string;
+  description: string;
+  safety: "read" | "analyze" | "recommend" | "write_gated";
+  input_schema: Record<string, unknown>;
+  requires_approval: boolean;
+  tags: string[];
+};
+
+export type EnterpriseReadiness = {
+  profile: {
+    active_mode: string;
+    supported_modes: string[];
+    managed_cloud: Record<string, string>;
+  };
+  checks: Array<{ component: string; status: string; detail: string }>;
+};

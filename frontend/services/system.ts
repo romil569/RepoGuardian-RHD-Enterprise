@@ -14,6 +14,8 @@ import type {
   RepositoryHealth,
   MLModelCard,
   ModelProviderStatus,
+  RHDToolSpec,
+  EnterpriseReadiness,
   RHDInitialScan,
   RHDOnboardingResponse,
   RHDQueryResponse,
@@ -156,4 +158,12 @@ export function fetchModelGatewayStatus(): Promise<{ providers: ModelProviderSta
 
 export function fetchMLModels(): Promise<{ models: MLModelCard[] }> {
   return request<{ models: MLModelCard[] }>("/api/platform/ml-models");
+}
+
+export function fetchRHDTools(): Promise<{ tools: RHDToolSpec[] }> {
+  return request<{ tools: RHDToolSpec[] }>("/api/platform/tools");
+}
+
+export function fetchEnterpriseReadiness(): Promise<EnterpriseReadiness> {
+  return request<EnterpriseReadiness>("/api/platform/enterprise-readiness");
 }

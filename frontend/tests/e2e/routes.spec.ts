@@ -6,6 +6,7 @@ const routes = [
   { path: "/investigations", marker: /Issues/i },
   { path: "/review-queue", heading: /Review Queue/i },
   { path: "/audit-log", heading: /Audit Log/i },
+  { path: "/mcp", heading: /RHD MCP Tool Matrix/i },
   { path: "/models", heading: /RHD Model Intelligence/i },
   { path: "/automation", heading: /RHD Automation Center/i },
   { path: "/system", heading: /RHD System/i }

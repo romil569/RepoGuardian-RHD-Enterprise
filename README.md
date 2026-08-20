@@ -4,145 +4,126 @@
 
 ### Autonomous Software Engineering Intelligence with Human-Controlled Execution
 
-RepoGuardian is an industry-oriented hackathon project for open-source maintainers, powered by RHD — Repository Health Director. RepoGuardian is the platform; RHD is the intelligence agent that connects to a GitHub repository, synchronizes issues/PRs/releases, builds a repository-scoped knowledge index, investigates repository health, and turns recommendations into a human-approved maintainer workflow.
+[![Python](https://img.shields.io/badge/Python-3.12-blue)](backend)
+[![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688)](backend/app/main.py)
+[![Next.js](https://img.shields.io/badge/Next.js-frontend-black)](frontend)
+[![TypeScript](https://img.shields.io/badge/TypeScript-checked-3178c6)](frontend)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-managed--ready-336791)](docs/deployment-managed-cloud.md)
+[![pgvector](https://img.shields.io/badge/pgvector-ready--not--connected-5b46c8)](docs/deployment-managed-cloud.md)
+[![MCP](https://img.shields.io/badge/MCP-stdio--implemented-4b5563)](mcp-server)
+[![Ollama](https://img.shields.io/badge/Ollama-local--validated-7c3aed)](docs/provider-benchmark.md)
+[![Tests](https://img.shields.io/badge/tests-pytest%20%7C%20playwright%20%7C%20mcp-brightgreen)](#testing)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Problem
+Connect a GitHub repository. RHD investigates its issues, pull requests, source code, releases, engineering risks and repository health using agentic RAG, specialized ML intelligence and evidence-grounded reasoning.
 
-Maintainers often triage issues with incomplete reports, duplicates, unclear priority, and scattered project history. Naive AI assistants can make this worse if they invent evidence or act without approval.
-
-## Solution
-
-RepoGuardian uses RHD, project-aware retrieval, structured investigation tools, evidence validation, and a human-in-the-loop review queue. RHD investigates. RHD recommends. Humans authorize external action.
-
-Paste Repository -> RHD Syncs -> RHD Builds Context -> RHD Investigates -> RHD Validates Evidence -> RHD Prioritizes -> RHD Recommends -> Human Approves
-
-## Key Features
-
-- GitHub repository connection and idempotent sync
-- RHD repository URL onboarding for `owner/repository` and `https://github.com/owner/repository`
-- RHD full repository review, executive assessment, daily maintainer priorities, and Ask RHD console
-- Public repository read-only analysis with write operations still restricted to the configured demo repository
-- Repository-scoped RAG over issues, PRs, comments, and releases
-- Multi-step investigation pipeline with operational trace
-- Duplicate detection, completeness analysis, security signals, release-regression analysis, related PR intelligence, priority, and escalation
-- Evidence-backed explanations with repository isolation
-- Repository health score, weekly brief, feedback, evaluation, and telemetry
-- Action recommendations, review queue, approval/rejection, policy validation, safe GitHub action execution, and audit log
-- SQLite/local vector fallback for reliable hackathon demos
-- PostgreSQL/pgvector Docker target for production architecture
+RHD analyzes automatically. RHD recommends automatically. Humans authorize external actions.
 
 ## Architecture
 
-GitHub -> Sync / Monitoring -> Database -> Repository Knowledge Index -> Project-Aware RAG -> Investigation Orchestrator -> Structured Tools -> Evidence Validation -> Action Recommendation -> Human Review -> Policy Validation -> Safe GitHub Action -> Audit Trail -> Maintainer Dashboard
+```mermaid
+flowchart LR
+  G[GitHub] --> W[Webhooks / Sync]
+  W --> Q[Event Queue]
+  Q --> RI[Repository Intelligence]
+  RI --> S[(SQL + Vector + Graph)]
+  S --> AR[Agentic RAG]
+  AR --> RHD[RHD Supervisor]
+  RHD --> A[Specialist Agents]
+  A --> ML[ML / DL Intelligence]
+  ML --> EC[Evidence Critic]
+  EC --> PG[Policy Gate]
+  PG --> HR[Human Review]
+  HR --> GA[GitHub Action]
+```
 
-Industry path:
+Deployment modes:
 
-Repository -> Event -> Data + Code Intelligence -> RAG + Graph-RAG -> RHD Supervisor -> Specialist Agents -> ML Predictions -> Evidence Critic -> Policy Gate -> Human Approval -> GitHub
+- `LIGHTWEIGHT_LOCAL`: SQLite, local vectors, deterministic/RHD tools.
+- `INDUSTRY_LOCAL`: optional Docker PostgreSQL/Redis when Docker exists.
+- `MANAGED_CLOUD`: Vercel frontend, Python FastAPI service, managed PostgreSQL/pgvector, Redis or Postgres queue fallback.
+- `ENTERPRISE_AWS`: Terraform foundation; not provisioned.
 
-## Tech Stack
+## Feature Matrix
 
-- Frontend: Next.js, TypeScript, Tailwind CSS
-- Backend: FastAPI, Pydantic, SQLAlchemy, Alembic
-- GitHub: GitHub CLI-backed service abstraction
-- Demo database: SQLite
-- Demo vector backend: local repository-filtered token vectors
-- Production target: PostgreSQL + pgvector
-- Testing: pytest, ESLint, TypeScript, Next production build
+| Feature | Status | Notes |
+|---|---|---|
+| RHD Agent | Working | Repository review, Ask RHD, priorities, evidence trace |
+| Agentic RAG v2 | Implemented | Query planner, hybrid retrieval, critic, objective eval metrics |
+| Code-RAG | Partial | Static code scan/symbol graph foundations; deep code embeddings optional |
+| Graph-RAG | Partial | Local graph abstraction and evidence paths; production graph DB not connected |
+| MCP Server | Implemented | stdio tools/resources/prompts over shared RHD tool registry |
+| PR Risk | Working | PR activity and related PR intelligence foundations |
+| Issue Intelligence | Working | Duplicate, completeness, priority, security, release correlation |
+| Security Signals | Working | Signal detection only; not vulnerability certification |
+| Release Intelligence | Working | Correlation wording, no causation claims |
+| Repository Health | Working | Health score, dimensions, weekly brief |
+| Automation | Partial | Event/job foundations; no unrestricted autopilot |
+| Review Queue | Working | Approval, rejection, policy validation |
+| Audit | Working | Safe summaries, no secrets |
+| Model Gateway | Working | Ollama local adapter, cloud config probes, deterministic fallback |
+| ML Registry | Working | Honest model cards; training requires defensible dataset |
+| Managed PostgreSQL | Ready for credentials | Provider-neutral `DATABASE_URL`, pgvector health checks |
+| Redis Queue | Optional provider | `REDIS_URL`; Postgres/local fallbacks remain available |
 
-## Pages
+## Quick Start
 
-- Command Center: RHD hero, repository input, Ask RHD, executive assessment, priorities, intelligence map, system status
-- Repositories: connect, sync, and search repository history
-- Issues / Investigations: run investigations, inspect evidence, confidence, telemetry, recommendations, feedback
-- Review Queue: preview, approve, reject, and execute policy-validated recommendations
-- Repository Health / Weekly Brief / Evaluation: analytics from stored repository data
-- Models / Automation / System: provider status, ML model cards, event automation, and platform foundations
-- Audit Log: trace recommendations, approvals, rejections, feedback, and actions
-- Settings: non-secret runtime and safety policy configuration
-
-## Setup
+### Lightweight Local
 
 ```powershell
 cd C:\Users\HP\Desktop\RepoGuardian
 copy .env.example .env
 copy backend\.env.example backend\.env
-```
-
-Authenticate GitHub CLI:
-
-```powershell
-gh auth login
-gh auth status
-```
-
-Install dependencies:
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
-
-cd ..\frontend
-npm install
-```
-
-Run migrations:
-
-```powershell
-cd ..\backend
-.\.venv\Scripts\python -m alembic upgrade head
-```
-
-## Environment Variables
-
-Important settings are documented in `.env.example` and `backend/.env.example`.
-
-- `DATABASE_URL`: SQLite by default for hackathon runtime
-- `DATA_BACKEND`: `sqlite`
-- `VECTOR_BACKEND`: `local`
-- `DEMO_GITHUB_REPOSITORY`: `romil569/RepoGuardian-Demo`
-- `AI_PROVIDER_PRIORITY`: optional provider order across Ollama, Groq, OpenRouter, OpenAI, and deterministic fallback
-- `AI_PROVIDER_MODE`: `auto`, `deterministic`, `openai`, `ollama`, `groq`, or `openrouter`
-- `REQUIRE_HUMAN_APPROVAL`: defaults to `true`
-- `ALLOWED_WRITE_REPOSITORY`: defaults to `romil569/RepoGuardian-Demo`
-
-Never commit `.env`, API keys, GitHub tokens, or database credentials.
-
-## Running
-
-Low-friction startup:
-
-```powershell
 .\scripts\start-dev.ps1
 ```
 
-Command Prompt alternative:
+Open `http://127.0.0.1:3000`.
 
-```cmd
-scripts\start-dev.cmd
-```
-
-Manual startup:
+### Industry Local
 
 ```powershell
-cd backend
-.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-
-cd ..\frontend
-npm run dev
-```
-
-Open:
-
-- Frontend: `http://127.0.0.1:3000`
-- Backend health: `http://127.0.0.1:8000/health`
-
-Industry-local startup attempts to use Docker PostgreSQL/Redis when available and otherwise keeps the lightweight runtime intact:
-
-```powershell
+cd C:\Users\HP\Desktop\RepoGuardian
 .\scripts\start-industry-local.ps1
 .\scripts\doctor.ps1
 ```
+
+Docker PostgreSQL/Redis are used only when Docker is installed. Otherwise the stable lightweight path remains available.
+
+### Managed Cloud
+
+Backend command:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Required backend environment:
+
+- `DEPLOYMENT_MODE=MANAGED_CLOUD`
+- `DATABASE_URL=postgresql://...`
+- `POSTGRES_RUNTIME_MODE=managed`
+- `FRONTEND_URL=https://...`
+- `CORS_ORIGINS=https://...`
+- optional `REDIS_URL` with `QUEUE_BACKEND=redis`
+
+Frontend environment:
+
+```bash
+NEXT_PUBLIC_API_URL=https://your-fastapi-service.example.com
+```
+
+See [docs/deployment-managed-cloud.md](docs/deployment-managed-cloud.md) and [docs/deploy-render.md](docs/deploy-render.md).
+
+## MCP
+
+```powershell
+cd mcp-server
+npm install
+$env:REPOGUARDIAN_API_URL="http://127.0.0.1:8000"
+npm start
+```
+
+MCP exposes RHD tools, resources, and prompts. Write-gated actions remain human/policy gated. See [docs/mcp.md](docs/mcp.md).
 
 ## Testing
 
@@ -156,59 +137,39 @@ cd frontend
 npm run lint
 npm run typecheck
 npm run build
+npm run e2e
 ```
-
-Doctor script:
 
 ```powershell
-.\scripts\doctor.ps1
+cd mcp-server
+npm run typecheck
+npm test
 ```
-
-## Demo
-
-### 5-Minute Hackathon Demo
-
-Use `docs/demo-runbook.md` and `docs/demo-script.md`. The demo is deterministic and does not require Docker, pgvector, or OpenAI credentials.
-
-Core RHD demo path:
-
-1. Paste a repository into RHD
-2. Show RHD initial scan and full repository review
-3. Ask RHD: "What should I fix first?"
-4. Show evidence-backed duplicate/security/release findings
-5. Show Today's Maintainer Priorities
-6. Open Investigations for issue-level evidence
-7. Show Review Queue action preview and approval safeguard
-8. Show Audit Log
-
-### 10-Minute Industry Demo
-
-Use `docs/demo-runbook.md` plus `/models`, `/automation`, `/system`, `docs/production-architecture.md`, and `docs/activation-preflight.md`.
-
-1. Show repository onboarding and RHD supervisor review.
-2. Show provider gateway state and deterministic/local AI fallback.
-3. Show ML cards with honest fallback or validated metrics only.
-4. Show code intelligence and graph foundations.
-5. Show webhook automation design and local signature validation.
-6. Show review queue, policy gate, and audit trail.
-7. Show deployment modes and current production blockers.
 
 ## Safety
 
-- Repository writes are allow-listed to the configured demo repository.
-- Arbitrary public repositories are analyzed in read-only mode.
-- External GitHub writes require explicit approval and server-side policy validation.
+- Repository writes are allow-listed and require human approval.
+- Public repositories are analyzed in read-only mode unless policy explicitly allows writes.
+- Private repositories default to local/deterministic processing.
+- Issue text, comments, README files, code, and PR descriptions are treated as untrusted evidence.
 - Evidence must correspond to synchronized repository records.
-- Security-sensitive issues avoid public exploit or secret requests.
-- Frontend never receives GitHub/OpenAI secrets.
+- Frontend `NEXT_PUBLIC_` variables never contain backend secrets.
 - Audit logs store safe summaries, not secrets or private reasoning.
 
-## Current Limitations
+## Current Limits
 
-- Docker/PostgreSQL/pgvector has not been live-validated on this machine because Docker is unavailable.
-- `OPENAI_API_KEY` is not configured, so deterministic intelligence is active.
-- Real GitHub write validation was intentionally skipped to avoid unnecessary demo repository noise; write execution is covered by mocked tests and safe `NO_ACTION` live workflow validation.
+- Managed PostgreSQL/pgvector is ready for credentials but not connected in this local run.
+- Redis is optional and not connected locally.
+- Docker remains optional and unavailable on the current machine.
+- `qwen3:1.7b` Ollama was validated locally; `qwen3:8b` was pulled but too slow for demo.
+- ML/DL training is not claimed without a defensible labeled dataset.
+- Production is not marked validated until deployed infrastructure and live production testing exist.
 
-## Enterprise Roadmap
+## Documentation
 
-Future production work can add GitHub App identity, webhooks, PostgreSQL/pgvector deployment, Redis/Kafka queues, distributed workers, managed secret storage, RBAC, SSO, multi-tenant isolation, observability, evaluation pipelines, and enterprise audit retention.
+- [API](docs/api.md)
+- [MCP](docs/mcp.md)
+- [Managed Cloud Deployment](docs/deployment-managed-cloud.md)
+- [Provider Benchmark](docs/provider-benchmark.md)
+- [Industry Readiness](docs/industry-readiness-scorecard.md)
+- [Public Source Audit](docs/public-source-audit.md)

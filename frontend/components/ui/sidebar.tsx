@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Bot, ClipboardList, Command, FileClock, GitBranch, Home, ListChecks, RadioTower, SearchCheck, ServerCog, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, Bot, ClipboardList, Command, FileClock, GitBranch, Home, ListChecks, RadioTower, SearchCheck, ServerCog, Settings, ShieldCheck, Sparkles, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,7 @@ const sections: Array<{ title: string; items: Array<{ href: string; label: strin
       { href: "/health", label: "Repository Health", icon: Activity, detail: "Risk dimensions" },
       { href: "/weekly", label: "Weekly Brief", icon: FileClock, detail: "Maintainer briefing" },
       { href: "/evaluation", label: "Evaluation", icon: ShieldCheck, detail: "Feedback quality" },
+      { href: "/mcp", label: "MCP", icon: Wrench, detail: "Tool matrix" },
       { href: "/models", label: "Models", icon: Bot, detail: "Provider and ML cards" }
     ]
   },

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: repoguardian-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEPLOYMENT_MODE
+        value: MANAGED_CLOUD
+      - key: POSTGRES_RUNTIME_MODE
+        value: managed
+      - key: DATA_BACKEND
+        value: postgres
+      - key: VECTOR_BACKEND
+        value: pgvector
+      - key: QUEUE_BACKEND
+        value: postgres
+      - key: REQUIRE_HUMAN_APPROVAL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
