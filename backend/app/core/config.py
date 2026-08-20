@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./repoguardian-dev.db")
     data_backend: str = "sqlite"
     vector_backend: str = "local"
+    deployment_mode: str = "LIGHTWEIGHT_LOCAL"
+    postgres_runtime_mode: str = "local"
+    redis_url: str | None = None
+    queue_backend: str = "local"
+    cors_origins: str = ""
     github_token: str | None = None
     openai_api_key: str | None = None
     ai_provider_mode: str = "auto"
@@ -76,6 +81,12 @@ class Settings(BaseSettings):
                 raise ValueError("AI provider mode must be auto, deterministic, openai, ollama, groq, or openrouter")
         if self.github_auth_mode not in {"auto", "cli", "app", "token"}:
             raise ValueError("GitHub auth mode must be auto, cli, app, or token")
+        if self.deployment_mode not in {"LIGHTWEIGHT_LOCAL", "INDUSTRY_LOCAL", "MANAGED_CLOUD", "ENTERPRISE_AWS"}:
+            raise ValueError("Deployment mode must be LIGHTWEIGHT_LOCAL, INDUSTRY_LOCAL, MANAGED_CLOUD, or ENTERPRISE_AWS")
+        if self.postgres_runtime_mode not in {"local", "managed"}:
+            raise ValueError("Postgres runtime mode must be local or managed")
+        if self.queue_backend not in {"local", "postgres", "redis"}:
+            raise ValueError("Queue backend must be local, postgres, or redis")
         if self.job_max_retries < 0:
             raise ValueError("Job max retries cannot be negative")
         if self.job_timeout_seconds < 1:

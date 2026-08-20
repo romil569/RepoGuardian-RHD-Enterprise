@@ -10,7 +10,11 @@ from app.core.config import settings
 from app.db.models import Repository
 from app.db.session import get_db
 from app.ml.registry import model_status_cards
+from app.platform.deployment import enterprise_readiness
 from app.platform.model_gateway import ModelGateway, ModelRequest
+from app.platform.tool_registry import execute_tool, list_tools
+from app.rag.agentic import retrieve_agentic_evidence
+from app.db.session import engine
 from app.services.code_intelligence import analyze_source_tree, build_code_graph, root_cause_hypotheses
 
 router = APIRouter(prefix="/api/platform", tags=["platform"])
@@ -26,6 +30,18 @@ class CodeAnalyzeRequest(BaseModel):
     repository_id: int
     local_path: str
     issue_text: str | None = None
+
+
+class RagQueryRequest(BaseModel):
+    repository_id: int
+    query: str
+    top_k: int = 8
+
+
+class ToolExecutionRequest(BaseModel):
+    tool: str
+    payload: dict[str, object] = {}
+    approved: bool = False
 
 
 @router.get("/model-gateway")
@@ -44,6 +60,31 @@ def model_gateway_probe(request: ModelProbeRequest) -> dict[str, object]:
 @router.get("/ml-models")
 def ml_models() -> dict[str, object]:
     return {"models": [card.__dict__ | {"status": card.status.value} for card in model_status_cards()]}
+
+
+@router.get("/enterprise-readiness")
+def enterprise_readiness_status() -> dict[str, object]:
+    return enterprise_readiness(engine)
+
+
+@router.get("/tools")
+def rhd_tools() -> dict[str, object]:
+    return {"tools": list_tools()}
+
+
+@router.post("/tools/execute")
+def rhd_tool_execute(request: ToolExecutionRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    try:
+        return execute_tool(db, request.tool, request.payload, approved=request.approved)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/rag/query")
+def rag_query(request: RagQueryRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if not db.get(Repository, request.repository_id):
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return retrieve_agentic_evidence(db, request.repository_id, request.query, request.top_k)
 
 
 @router.post("/code/analyze")

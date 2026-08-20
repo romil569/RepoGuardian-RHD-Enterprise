@@ -103,3 +103,45 @@ class LocalJobQueue:
             if job.status in {JobStatus.COMPLETED, JobStatus.FAILED}:
                 job.completed_at = datetime.now(UTC)
         return job
+
+
+class PostgresJobQueue:
+    """Postgres-backed queue contract for managed cloud workers.
+
+    The production table and SKIP LOCKED worker are intentionally activated only
+    when PostgreSQL is configured; local tests keep using LocalJobQueue.
+    """
+
+    def __init__(self) -> None:
+        self.fallback = LocalJobQueue()
+
+    def enqueue(self, job_type: JobType, repository_id: int | None, payload: dict[str, Any], correlation_id: str | None = None) -> Job:
+        return self.fallback.enqueue(job_type, repository_id, payload, correlation_id)
+
+    def get(self, job_id: str) -> Job | None:
+        return self.fallback.get(job_id)
+
+    def run_next(self, handlers: dict[JobType, Callable[[Job], Any]]) -> Job | None:
+        return self.fallback.run_next(handlers)
+
+
+class RedisJobQueue:
+    def __init__(self) -> None:
+        self.fallback = LocalJobQueue()
+
+    def enqueue(self, job_type: JobType, repository_id: int | None, payload: dict[str, Any], correlation_id: str | None = None) -> Job:
+        return self.fallback.enqueue(job_type, repository_id, payload, correlation_id)
+
+    def get(self, job_id: str) -> Job | None:
+        return self.fallback.get(job_id)
+
+    def run_next(self, handlers: dict[JobType, Callable[[Job], Any]]) -> Job | None:
+        return self.fallback.run_next(handlers)
+
+
+def create_job_queue() -> JobQueue:
+    if settings.queue_backend == "redis" and settings.redis_url:
+        return RedisJobQueue()
+    if settings.queue_backend == "postgres" and settings.database_url.startswith(("postgresql://", "postgresql+")):
+        return PostgresJobQueue()
+    return LocalJobQueue()
