@@ -24,3 +24,5 @@ postgres-data/
 .neon
 *.sqlite3
 *.db
+.vercel
+.env.local
