@@ -1,11 +1,18 @@
 # RepoGuardian Agent Notes
 
-RepoGuardian is a Prompt 1 foundation for an agentic open-source maintainer assistant. Do not implement full RAG, AI investigation, automated writes, or evidence synthesis without an explicit later prompt.
+RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation.
 
 ## Architecture
 
 - `backend/`: FastAPI, Pydantic settings, SQLAlchemy models, Alembic migrations, service placeholders.
-- `frontend/`: Next.js, TypeScript, Tailwind CSS, dashboard shell and empty states.
+- `backend/app/github/client.py`: GitHub service interface currently backed by authenticated GitHub CLI for local development.
+- `backend/app/services/github_sync.py`: repository connect/sync/upsert pipeline.
+- `backend/app/services/indexing.py`: converts issues, PRs, comments, and releases into indexed repository documents.
+- `backend/app/rag/retriever.py`: repository-filtered local vector/keyword retrieval fallback.
+- `backend/app/agents/tools/analysis.py`: structured deterministic tools for classification, completeness, priority, escalation, similar issues, PRs, and releases.
+- `backend/app/agents/workflows/investigation.py`: multi-step orchestrator with safe operational trace.
+- `backend/app/services/evidence.py`: strict evidence source validation.
+- `frontend/`: Next.js, TypeScript, Tailwind CSS, repository sync/search UI and investigation UI.
 - `infrastructure/`: database initialization and future deployment assets.
 - `docs/`: setup reports and architecture notes.
 - `demo/`: harmless local demo source material.
@@ -20,6 +27,17 @@ RepoGuardian is a Prompt 1 foundation for an agentic open-source maintainer assi
 - Frontend dev server: `cd frontend && npm run dev`
 - Database: `docker compose up -d postgres`
 - Migrations: `cd backend && .\.venv\Scripts\python -m alembic upgrade head`
+- Connect demo repository: `POST /api/repositories/connect` with `{"repository":"romil569/RepoGuardian-Demo"}`
+- Sync repository: `POST /api/repositories/{id}/sync`
+- Search repository history: `POST /api/repositories/{id}/search`
+- Investigate issue: `POST /api/issues/{id}/investigate`
+
+## Data Backends
+
+- Production target: PostgreSQL plus pgvector via `docker-compose.yml`.
+- Local fallback: SQLite plus repository-filtered lexical vectors stored in `indexed_documents`.
+- Use `DATA_BACKEND` and `VECTOR_BACKEND` to document/select the active mode.
+- Repository filtering must happen inside retrieval queries before scoring. Do not retrieve globally and filter afterward.
 
 ## Safety Rules
 
@@ -27,5 +45,7 @@ RepoGuardian is a Prompt 1 foundation for an agentic open-source maintainer assi
 - The demo repository is expected to be `<authenticated-user>/RepoGuardian-Demo`.
 - Never modify issues, labels, branches, pull requests, or releases in non-demo repositories unless the user explicitly requests it.
 - Never fabricate GitHub evidence, commits, labels, issue contents, or release history in reports.
+- Every displayed evidence item must be verified against synchronized repository records or a verified GitHub response.
 - Never commit `.env`, tokens, API keys, browser cookies, or credentials.
 - Preserve repository isolation and run relevant tests after meaningful changes.
+- Live AI provider calls require `OPENAI_API_KEY`; without it, deterministic tools must return `AI provider not configured` behavior rather than fabricating AI output.

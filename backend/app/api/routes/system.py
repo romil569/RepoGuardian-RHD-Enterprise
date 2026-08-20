@@ -22,4 +22,7 @@ def system_status() -> dict[str, object]:
         "database": database,
         "app_env": settings.app_env,
         "demo_repository": settings.demo_github_repository,
+        "data_backend": settings.data_backend,
+        "vector_backend": settings.vector_backend,
+        "ai_provider": "configured" if settings.openai_api_key else "not_configured",
     }

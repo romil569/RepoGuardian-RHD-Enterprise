@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -22,3 +23,7 @@ class Repository(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    issues: Mapped[list["Issue"]] = relationship(back_populates="repository", cascade="all, delete-orphan")
+    pull_requests: Mapped[list["PullRequest"]] = relationship(back_populates="repository", cascade="all, delete-orphan")
+    releases: Mapped[list["Release"]] = relationship(back_populates="repository", cascade="all, delete-orphan")

@@ -28,9 +28,10 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     from sqlalchemy import create_engine, pool
 
+    connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {"connect_timeout": 2}
     connectable = create_engine(
         settings.database_url,
-        connect_args={"connect_timeout": 2},
+        connect_args=connect_args,
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:

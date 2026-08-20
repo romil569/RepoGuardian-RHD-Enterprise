@@ -1,6 +1,6 @@
 # RepoGuardian Setup Status
 
-Generated: 2026-08-19
+Generated: 2026-08-20
 
 ## System Dependency Status
 
@@ -27,17 +27,25 @@ Generated: 2026-08-19
 - Commits on `main`: 5
 - Pull requests: 4 open PRs verified; 3 were created by this bootstrap run and 1 additional PR was present as `#18`
 
-## Backend Status
+## Prompt 2 Backend Status
 
 - FastAPI app imports successfully
 - `GET /health`: verified `{"status":"ok","service":"RepoGuardian"}`
-- `GET /api/system/status`: verified responsive; reports backend `ok`, database `unavailable`, demo repository `romil569/RepoGuardian-Demo`
-- Backend tests: `pytest` passed, 1 test
-- Alembic migration head: `0001_create_repositories`
-- Offline migration SQL generation: passed
-- Live migration/database connectivity: blocked until Docker/PostgreSQL is available
+- `GET /api/system/status`: verified responsive; reports backend `ok`
+- Data backend: SQLite fallback, `DATA_BACKEND=sqlite`
+- Vector backend: local repository-filtered token vectors, `VECTOR_BACKEND=local`
+- Production target remains PostgreSQL + pgvector
+- Alembic migration head: `0002_repository_intelligence`
+- Live SQLite Alembic migration: passed
+- GitHub integration: working through authenticated GitHub CLI
+- Repository connect API: implemented
+- Repository sync API: implemented and live-tested
+- RAG search API: implemented and live-tested
+- Investigation API: implemented and live-tested
+- Evidence validation: implemented and tested
+- AI provider: not configured; deterministic tools are active
 
-## Frontend Status
+## Prompt 2 Frontend Status
 
 - Dependencies installed
 - npm audit: 0 vulnerabilities after updating Next.js and PostCSS
@@ -45,6 +53,8 @@ Generated: 2026-08-19
 - Typecheck: passed
 - Production build: passed
 - Routes generated: `/`, `/dashboard`, `/repositories`, `/investigations`, `/health`, `/settings`
+- Repository page now supports real connect/sync/search workflows
+- Investigation page now supports real issue selection and investigation results
 
 ## Database Status
 
@@ -52,7 +62,24 @@ Generated: 2026-08-19
 - PostgreSQL service is configured with `pgvector/pgvector:pg16`
 - Persistent volume is configured
 - `CREATE EXTENSION IF NOT EXISTS vector;` initialization is configured
-- Live database startup was not run because Docker CLI is unavailable
+- Live PostgreSQL startup was not run because Docker CLI is unavailable
+- SQLite fallback database was migrated through Alembic and synchronized with the demo repository
+
+## Prompt 2 Live Demo Results
+
+- Connected repository: `romil569/RepoGuardian-Demo`
+- Issues synchronized: 14
+- Pull requests synchronized: 4
+- Releases synchronized: 3
+- Indexed documents: 21
+- Idempotent repeated sync: verified, repeated sync updated existing records without adding duplicates
+- RAG query tested: `authentication fails after latest update`
+- Investigation scenarios tested:
+  - `#1 Login fails after version 2.1`: `BUG`, `HIGH`, `POSSIBLE_DUPLICATE`
+  - `#3 Application is not working`: `BUG`, `MEDIUM`, `NEEDS_INFORMATION`
+  - `#5 Typo in installation section of README`: `DOCUMENTATION`, `LOW`, `NORMAL_QUEUE`
+  - `#6 Application freezes when uploading large images`: `PERFORMANCE`, `HIGH`, `POSSIBLE_DUPLICATE`
+  - `#8 File upload stopped working after v1.2.0`: `BUG`, `HIGH`, `POSSIBLE_DUPLICATE`
 
 ## Safety Checks
 
@@ -65,11 +92,15 @@ Generated: 2026-08-19
 ## Tests Passed
 
 - Backend import check
-- Backend `pytest`
+- Backend `pytest`: 5 passed
 - FastAPI `/health`
 - FastAPI `/api/system/status`
 - Alembic migration head check
-- Alembic offline SQL generation
+- Live SQLite Alembic migration
+- Live GitHub repository connect
+- Live GitHub repository sync
+- Live RAG retrieval
+- Live investigation API
 - Frontend `npm audit --audit-level=high`
 - Frontend lint
 - Frontend typecheck
@@ -77,15 +108,19 @@ Generated: 2026-08-19
 - Git ignore safety check
 - Secret-pattern scan
 - GitHub repository/count verification
+- Cross-repository retrieval isolation test
+- Fabricated evidence rejection test
+- Allowed classification/priority/escalation test
 
 ## Tests Failed Or Blocked
 
 - Docker CLI check: failed, Docker is not installed or not on PATH
 - Docker Compose check: failed, Docker is not installed or not on PATH
-- Live database connectivity: unavailable because PostgreSQL is not running
-- Live Alembic migration: blocked until PostgreSQL is running
+- Live PostgreSQL connectivity: unavailable because PostgreSQL is not running
+- Live pgvector validation: blocked until Docker/PostgreSQL is running
+- Live AI provider investigation: blocked because `OPENAI_API_KEY` is not configured
 
 ## Manual Actions Still Required
 
-- Install/start Docker Desktop if live PostgreSQL and migrations should run locally now
-- For Prompt 2 write actions from the backend, create a fine-grained GitHub token restricted only to `romil569/RepoGuardian-Demo` with minimum required permissions when the implementation actually needs it
+- Install/start Docker Desktop if live PostgreSQL + pgvector should run locally now
+- Configure `OPENAI_API_KEY` only when live LLM-backed investigations are required

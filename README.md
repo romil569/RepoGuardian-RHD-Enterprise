@@ -1,21 +1,31 @@
 # RepoGuardian
 
-RepoGuardian is an industry-oriented AI/ML hackathon foundation for an agentic open-source maintainer assistant. Prompt 1 bootstraps the safe project shell, demo repository, backend, frontend, database configuration, and verification docs.
+RepoGuardian is an industry-oriented AI/ML hackathon project for an agentic open-source maintainer assistant. It synchronizes real GitHub repository data, indexes repository-specific history, retrieves evidence with repository isolation, and runs multi-step issue investigations with confidence, priority, escalation, and evidence validation.
 
 ## Stack
 
 - Frontend: Next.js, TypeScript, Tailwind CSS
 - Backend: FastAPI, Pydantic, SQLAlchemy, Alembic
 - Database: PostgreSQL with pgvector-ready Docker Compose
+- Local fallback: SQLite plus repository-filtered local lexical vectors when Docker is unavailable
 - Testing: pytest, frontend lint, TypeScript checking, Next.js build
 
 ## Current Features
 
 - `GET /health`
 - `GET /api/system/status`
-- Repository model and Alembic migration
-- Demo repository allow-list configuration
-- Professional dashboard shell with empty states
+- `POST /api/repositories/connect`
+- `POST /api/repositories/{id}/sync`
+- `GET /api/repositories/{id}/issues`
+- `GET /api/repositories/{id}/pull-requests`
+- `GET /api/repositories/{id}/releases`
+- `POST /api/repositories/{id}/search`
+- `POST /api/issues/{id}/investigate`
+- Repository, issue, PR, release, document, investigation, evidence, escalation, and trace models
+- GitHub CLI-backed local integration
+- Project-aware retrieval with repository filtering
+- Multi-step deterministic investigation pipeline
+- Frontend repository sync/search and investigation UI
 - Docker Compose configuration for local PostgreSQL and pgvector
 
 ## Demo Repository
@@ -59,6 +69,14 @@ cd backend
 .\.venv\Scripts\python -m alembic upgrade head
 ```
 
+When Docker is unavailable, use the default fallback:
+
+```powershell
+DATABASE_URL=sqlite:///./repoguardian-prompt2.db
+DATA_BACKEND=sqlite
+VECTOR_BACKEND=local
+```
+
 Start backend:
 
 ```powershell
@@ -93,7 +111,19 @@ npm run build
 - Do not put real credentials in `.env.example`.
 - Do not modify repositories other than `DEMO_GITHUB_REPOSITORY`.
 - Do not fabricate GitHub evidence or pretend API calls succeeded without verification.
+- Automated writes are restricted to `DEMO_GITHUB_REPOSITORY`.
+- Evidence shown by investigations must correspond to synchronized repository records.
+
+## Demo Flow
+
+1. Start the backend.
+2. Open the frontend.
+3. Go to Repositories.
+4. Connect `romil569/RepoGuardian-Demo`.
+5. Sync the repository.
+6. Search for repository history such as `authentication fails after latest update`.
+7. Go to Investigations and run analysis on synchronized issues.
 
 ## Next Development Stages
 
-Prompt 2 can add authenticated GitHub ingestion, issue analysis, repository context retrieval, RAG, agent workflows, persistence, and guarded write actions. A fine-grained GitHub token may be needed then, restricted only to `RepoGuardian-Demo` with minimum necessary permissions.
+Future stages can add a GitHub App, webhooks, live LLM provider calls, pgvector production indexing, background workers, richer policy engines, audit logs, and authenticated maintainer workflows.

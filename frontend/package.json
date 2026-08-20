@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "eslint .",
+    "lint": "eslint app components lib services types",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
