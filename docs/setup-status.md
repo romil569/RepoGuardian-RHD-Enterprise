@@ -43,7 +43,7 @@ Generated: 2026-08-20
 - RAG search API: implemented and live-tested
 - Investigation API: implemented and live-tested
 - Evidence validation: implemented and tested
-- AI provider: not configured; deterministic tools are active
+- AI provider: local Ollama gateway path validated with `qwen3:1.7b`; deterministic tools remain active for grounded RHD flows
 
 ## Prompt 3 Backend Status
 
@@ -77,7 +77,7 @@ Generated: 2026-08-20
 ## Final Prompt 5 Status
 
 - AI provider mode: `auto`
-- Live AI provider: not configured
+- Live AI provider: local Ollama configured and validated through the model gateway
 - Deterministic intelligence: active and live-tested
 - Docker/PostgreSQL/pgvector: blocked because Docker CLI is unavailable
 - SQLite/local vector fallback: working and final-demo verified

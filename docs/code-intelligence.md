@@ -14,4 +14,6 @@ Current implemented foundation:
 - local graph construction for Repository -> File -> Symbol
 - cautious root-cause hypotheses that report `INSUFFICIENT_EVIDENCE` when no source relationship is found
 
+`/api/platform/code/analyze` only scans directories inside configured `CODE_SCAN_ALLOWED_ROOTS`. When no roots are configured, the default local development boundary is the RepoGuardian workspace parent. This prevents arbitrary filesystem scans through the API.
+
 This is a foundation for Code-RAG, change-impact analysis, test advice, and patch advice. It is not a complete whole-program analyzer.

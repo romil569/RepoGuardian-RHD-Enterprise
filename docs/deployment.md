@@ -17,6 +17,8 @@ docker compose -f docker-compose.production.yml build
 docker compose -f docker-compose.production.yml up
 ```
 
+Docker Desktop is required for the local production stack. If Docker is unavailable, use lightweight mode with SQLite/local vectors.
+
 Required production variables:
 
 - `POSTGRES_PASSWORD`
@@ -33,3 +35,13 @@ Required production variables:
 - secret manager for GitHub and model provider credentials
 
 Do not run production writes without configuring human approval and policy allow-lists.
+
+## Terraform
+
+Validated locally:
+
+- `terraform fmt -check`
+- `terraform init -backend=false`
+- `terraform validate`
+
+No `terraform apply` has been run.

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.models import Repository
 from app.db.session import get_db
 from app.ml.registry import model_status_cards
@@ -52,6 +53,8 @@ def code_analyze(request: CodeAnalyzeRequest, db: Session = Depends(get_db)) -> 
     path = Path(request.local_path).resolve()
     if not path.exists() or not path.is_dir():
         raise HTTPException(status_code=422, detail="Local source path must be an existing directory")
+    if not _code_path_allowed(path):
+        raise HTTPException(status_code=403, detail="Local source path is outside configured code scan roots")
     analysis = analyze_source_tree(request.repository_id, path)
     graph = build_code_graph(request.repository_id, analysis)
     return {
@@ -59,3 +62,9 @@ def code_analyze(request: CodeAnalyzeRequest, db: Session = Depends(get_db)) -> 
         "graph": {"nodes": len(graph.nodes), "edges": len(graph.edges)},
         "root_cause_hypotheses": root_cause_hypotheses(request.issue_text or "", analysis),
     }
+
+
+def _code_path_allowed(path: Path) -> bool:
+    configured = [item.strip() for item in settings.code_scan_allowed_roots.split(";") if item.strip()]
+    roots = [Path(item).resolve() for item in configured] if configured else [Path.cwd().resolve().parent]
+    return any(path == root or root in path.parents for root in roots)

@@ -8,7 +8,7 @@ Configured provider order defaults to:
 
 Providers:
 
-- Ollama: local/private option, configured with `OLLAMA_BASE_URL` and `OLLAMA_MODEL`.
+- Ollama: local/private option, configured with `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS`.
 - Groq: optional cloud provider, configured with `GROQ_API_KEY` and `GROQ_MODEL`.
 - OpenRouter: optional cloud provider, configured with `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`.
 - OpenAI: optional cloud provider, configured with `OPENAI_API_KEY` and `OPENAI_MODEL`.
@@ -16,4 +16,4 @@ Providers:
 
 Private repository content defaults to local/deterministic processing unless `ALLOW_EXTERNAL_MODEL_FOR_PRIVATE_REPOS=true`.
 
-The current implementation includes provider configuration, provider status, routing, telemetry rows, circuit-breaker state, and deterministic fallback. Network provider execution is intentionally conservative until keys and explicit validation are available.
+The current implementation includes provider configuration, provider status, routing, telemetry rows, circuit-breaker state, deterministic fallback, and a bounded Ollama `/api/generate` adapter. Cloud provider execution is intentionally conservative until keys and explicit validation are available.

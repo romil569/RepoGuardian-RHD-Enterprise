@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from app.platform.model_gateway import ConfigOnlyProvider, DeterministicProvider, ModelGateway, ModelRequest
+import json
+
+from app.platform import model_gateway
+from app.platform.model_gateway import ConfigOnlyProvider, DeterministicProvider, ModelGateway, ModelRequest, OllamaProvider
 from app.platform.queue import JobStatus, JobType, LocalJobQueue
 from app.platform.stores import LocalGraphStore
 
@@ -60,3 +63,44 @@ def test_model_gateway_private_repo_skips_external_provider():
     )
     response = gateway.generate(ModelRequest(task="summary", prompt="summarize", repository_visibility="private"))
     assert response.provider == "deterministic"
+
+
+def test_local_provider_requires_reachable_endpoint():
+    provider = ConfigOnlyProvider("ollama", "test-model", local_endpoint="http://127.0.0.1:9")
+    assert provider.configured() is False
+
+
+def test_ollama_provider_generates_with_local_api(monkeypatch):
+    calls = []
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, payload: dict[str, object] | None = None):
+            self.payload = payload or {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        calls.append((request, timeout))
+        if isinstance(request, str):
+            return FakeResponse()
+        return FakeResponse({"response": "RepoGuardian local model OK", "eval_count": 5})
+
+    monkeypatch.setattr(model_gateway, "urlopen", fake_urlopen)
+    provider = OllamaProvider("ollama", "qwen3:1.7b", "http://127.0.0.1:11434", timeout_seconds=30)
+
+    response = provider.generate(ModelRequest(task="probe", prompt="Say OK"))
+
+    assert response.status == "OK"
+    assert response.provider == "ollama"
+    assert response.content == "RepoGuardian local model OK"
+    assert response.tokens == 5
+    assert len(calls) == 2

@@ -10,6 +10,7 @@ __pycache__/
 venv/
 node_modules/
 .next/
+test-results/
 out/
 dist/
 build/
@@ -19,5 +20,6 @@ coverage/
 .DS_Store
 Thumbs.db
 postgres-data/
+.terraform/
 *.sqlite3
 *.db

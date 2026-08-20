@@ -1,5 +1,9 @@
 # RepoGuardian
 
+## powered by RHD - Repository Health Director
+
+### Autonomous Software Engineering Intelligence with Human-Controlled Execution
+
 RepoGuardian is an industry-oriented hackathon project for open-source maintainers, powered by RHD — Repository Health Director. RepoGuardian is the platform; RHD is the intelligence agent that connects to a GitHub repository, synchronizes issues/PRs/releases, builds a repository-scoped knowledge index, investigates repository health, and turns recommendations into a human-approved maintainer workflow.
 
 ## Problem
@@ -30,6 +34,10 @@ Paste Repository -> RHD Syncs -> RHD Builds Context -> RHD Investigates -> RHD V
 ## Architecture
 
 GitHub -> Sync / Monitoring -> Database -> Repository Knowledge Index -> Project-Aware RAG -> Investigation Orchestrator -> Structured Tools -> Evidence Validation -> Action Recommendation -> Human Review -> Policy Validation -> Safe GitHub Action -> Audit Trail -> Maintainer Dashboard
+
+Industry path:
+
+Repository -> Event -> Data + Code Intelligence -> RAG + Graph-RAG -> RHD Supervisor -> Specialist Agents -> ML Predictions -> Evidence Critic -> Policy Gate -> Human Approval -> GitHub
 
 ## Tech Stack
 
@@ -129,6 +137,13 @@ Open:
 - Frontend: `http://127.0.0.1:3000`
 - Backend health: `http://127.0.0.1:8000/health`
 
+Industry-local startup attempts to use Docker PostgreSQL/Redis when available and otherwise keeps the lightweight runtime intact:
+
+```powershell
+.\scripts\start-industry-local.ps1
+.\scripts\doctor.ps1
+```
+
 ## Testing
 
 ```powershell
@@ -151,6 +166,8 @@ Doctor script:
 
 ## Demo
 
+### 5-Minute Hackathon Demo
+
 Use `docs/demo-runbook.md` and `docs/demo-script.md`. The demo is deterministic and does not require Docker, pgvector, or OpenAI credentials.
 
 Core RHD demo path:
@@ -163,6 +180,18 @@ Core RHD demo path:
 6. Open Investigations for issue-level evidence
 7. Show Review Queue action preview and approval safeguard
 8. Show Audit Log
+
+### 10-Minute Industry Demo
+
+Use `docs/demo-runbook.md` plus `/models`, `/automation`, `/system`, `docs/production-architecture.md`, and `docs/activation-preflight.md`.
+
+1. Show repository onboarding and RHD supervisor review.
+2. Show provider gateway state and deterministic/local AI fallback.
+3. Show ML cards with honest fallback or validated metrics only.
+4. Show code intelligence and graph foundations.
+5. Show webhook automation design and local signature validation.
+6. Show review queue, policy gate, and audit trail.
+7. Show deployment modes and current production blockers.
 
 ## Safety
 

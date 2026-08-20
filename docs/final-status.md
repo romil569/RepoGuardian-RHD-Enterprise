@@ -36,13 +36,18 @@
 | GitHub Comment Action | PARTIAL | Mocked tests | Real write skipped intentionally |
 | Audit Log | WORKING | Audit API and tests | Safe summaries, no secrets |
 | Settings | WORKING | Settings API/UI/tests | Non-secret configuration only |
-| Model Gateway | WORKING | Unit tests and `/api/platform/model-gateway` | Ollama/Groq/OpenRouter/OpenAI config probes plus deterministic fallback |
+| Model Gateway | WORKING | Unit tests and `/api/platform/model-gateway` | Ollama local generation adapter, cloud config probes, deterministic fallback |
 | ML Model Registry | WORKING | Unit tests and `/api/platform/ml-models` | Honest model cards report insufficient training data instead of fake metrics |
 | GitHub Webhooks | WORKING | Signature/unit tests | Signed events normalize into repository events and local queue jobs |
 | Local Job Queue | WORKING | Unit tests | Deterministic enqueue, dedupe, retry, and failure handling |
 | Code Intelligence | WORKING | Unit tests and `/api/platform/code/analyze` | Bounded local source scan, symbols, static features, and code graph foundation |
 | Graph Store | WORKING | Unit tests | Local graph backend for Repository/File/Symbol relationships |
 | Platform UI | WORKING | Frontend lint/typecheck/build and route QA | Models, Automation, and System views expose platform status |
+| Playwright E2E | WORKING | `npm run e2e` | 24 route/viewport checks passed |
+| Terraform | WORKING | `fmt`, `init -backend=false`, `validate` | CLI installed via winget; no apply run |
+| Ollama Local Provider | WORKING | Direct `/api/generate` and `/api/platform/model-gateway/probe` | `qwen3:1.7b` returned through the app gateway in 15.6s; `qwen3:8b` installed but too slow |
+| ML Dataset Builder | WORKING | dry-run test and backend tests | Public GitHub allow-list collector added |
+| SQLite to PostgreSQL Migration Tool | WORKING | backend tests | Safe dry-run/verify-only utility added; not run against live PostgreSQL |
 | Production Containers | PARTIAL | Dockerfile/compose/CI definitions | Build validation depends on Docker availability |
 | OpenAI Provider | OPTIONAL | Env/config check | `OPENAI_API_KEY` not configured; deterministic fallback verified |
 | PostgreSQL/pgvector | PARTIAL | Docker compose definition | Production profile documented; SQLite/local vector fallback verified |

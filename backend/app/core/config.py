@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     ai_provider_mode: str = "auto"
     ai_provider_priority: str = "ollama,groq,openrouter,openai,deterministic"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:8b"
+    ollama_model: str = "qwen3:1.7b"
+    ollama_timeout_seconds: int = 60
     groq_api_key: str | None = None
     groq_model: str = "llama-3.1-8b-instant"
     openrouter_api_key: str | None = None
@@ -48,6 +49,7 @@ class Settings(BaseSettings):
     max_initial_code_files: int = 500
     max_initial_code_bytes: int = 5_000_000
     max_code_file_bytes: int = 200_000
+    code_scan_allowed_roots: str = ""
     max_ai_calls_per_investigation: int = 4
     max_tokens_per_review: int = 6000
 
