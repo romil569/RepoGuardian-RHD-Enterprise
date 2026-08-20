@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.github_webhook import router as github_webhook_router
 from app.api.routes.health import router as health_router
+from app.api.routes.action_recommendations import router as action_recommendations_router
 from app.api.routes.analytics import router as analytics_router
+from app.api.routes.audit_log import router as audit_log_router
 from app.api.routes.issues import router as issues_router
 from app.api.routes.investigations import router as investigations_router
 from app.api.routes.repositories import router as repositories_router
@@ -39,6 +41,8 @@ def create_app() -> FastAPI:
     app.include_router(issues_router)
     app.include_router(investigations_router)
     app.include_router(analytics_router)
+    app.include_router(action_recommendations_router)
+    app.include_router(audit_log_router)
     app.include_router(settings_router)
     app.include_router(github_webhook_router)
 

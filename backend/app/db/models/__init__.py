@@ -1,6 +1,8 @@
 from app.db.models.repository import Repository
 from app.db.models.intelligence import (
     AgentExecutionStep,
+    ActionRecommendation,
+    AuditLogEvent,
     Comment,
     EscalationDecision,
     HumanFeedback,
@@ -15,6 +17,8 @@ from app.db.models.intelligence import (
 
 __all__ = [
     "AgentExecutionStep",
+    "ActionRecommendation",
+    "AuditLogEvent",
     "Comment",
     "EscalationDecision",
     "HumanFeedback",

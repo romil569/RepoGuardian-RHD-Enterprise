@@ -12,6 +12,7 @@ from app.agents.tools.analysis import (
 from app.core.config import settings
 from app.db.models import AgentExecutionStep, EscalationDecision, Investigation, InvestigationEvidence, Issue
 from app.rag.retriever import search_repository_history
+from app.services.action_recommendations import generate_recommendation_for_investigation, recommendation_dict
 from app.services.advanced_intelligence import (
     advanced_escalation,
     analyze_completeness,
@@ -22,6 +23,7 @@ from app.services.advanced_intelligence import (
     analyze_security,
     compute_telemetry,
 )
+from app.services.audit import log_audit_event
 from app.services.evidence import filter_valid_evidence
 
 
@@ -48,6 +50,13 @@ class InvestigationOrchestrator:
         issue = self.db.get(Issue, issue_id)
         if not issue:
             raise ValueError("Issue not found")
+        log_audit_event(
+            self.db,
+            "INVESTIGATION_STARTED",
+            f"Started investigation for issue #{issue.github_issue_number}.",
+            repository_id=issue.repository_id,
+            issue_id=issue.id,
+        )
         self._step("get_issue_details", "SUCCESS", f"Loaded issue #{issue.github_issue_number}", {"github_number": issue.github_issue_number}, start)
 
         start = perf_counter()
@@ -167,6 +176,29 @@ class InvestigationOrchestrator:
         self.db.commit()
         self.db.refresh(investigation)
         telemetry = compute_telemetry(investigation, len(valid_evidence))
+        recommendation = generate_recommendation_for_investigation(
+            self.db,
+            investigation,
+            {
+                "completeness": completeness,
+                "duplicate_analysis": duplicate_analysis,
+                "security_analysis": security,
+                "priority": priority,
+                "escalation": escalation,
+                "release_regression_analysis": release_regression,
+            },
+        )
+        log_audit_event(
+            self.db,
+            "INVESTIGATION_COMPLETED",
+            f"Completed investigation for issue #{issue.github_issue_number} with escalation {escalation['decision']}.",
+            repository_id=issue.repository_id,
+            issue_id=issue.id,
+            investigation_id=investigation.id,
+            metadata={"priority": priority["priority"], "escalation": escalation["decision"]},
+        )
+        self.db.commit()
+        self.db.refresh(recommendation)
 
         return {
             "investigation_id": investigation.id,
@@ -189,6 +221,7 @@ class InvestigationOrchestrator:
             "summary": investigation.summary,
             "investigation_trace": self.trace,
             "telemetry": telemetry,
+            "action_recommendations": [recommendation_dict(recommendation)],
         }
 
 

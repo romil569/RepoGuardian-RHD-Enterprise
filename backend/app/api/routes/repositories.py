@@ -9,6 +9,7 @@ from app.db.models import Issue, PullRequest, Release, Repository
 from app.db.session import get_db
 from app.github.client import GitHubAuthenticationError, GitHubNotFoundError, GitHubServiceError
 from app.rag.retriever import search_repository_history
+from app.services.audit import log_audit_event
 from app.services.github_sync import connect_repository, sync_repository
 
 router = APIRouter(prefix="/api/repositories", tags=["repositories"])
@@ -113,6 +114,15 @@ def connect(request: ConnectRepositoryRequest, db: Session = Depends(get_db)) ->
         repo, created = connect_repository(db, full_name)
     except Exception as exc:
         raise handle_github_error(exc) from exc
+    log_audit_event(
+        db,
+        "REPOSITORY_CONNECTED",
+        f"Connected repository {repo.full_name}.",
+        repository_id=repo.id,
+        metadata={"created": created},
+    )
+    db.commit()
+    db.refresh(repo)
     return {"status": "connected", "created": created, "repository": repo_dict(repo)}
 
 
@@ -137,6 +147,14 @@ def sync(repository_id: int, db: Session = Depends(get_db)) -> dict[str, object]
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:
         raise handle_github_error(exc) from exc
+    log_audit_event(
+        db,
+        "REPOSITORY_SYNCED",
+        f"Synchronized repository {db.get(Repository, repository_id).full_name}.",
+        repository_id=repository_id,
+        metadata={"documents_indexed": result.get("documents_indexed", 0)},
+    )
+    db.commit()
     return result
 
 

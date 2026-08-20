@@ -1,5 +1,7 @@
 from app.db.models import (
     AgentExecutionStep,
+    ActionRecommendation,
+    AuditLogEvent,
     Comment,
     EscalationDecision,
     HumanFeedback,
@@ -16,6 +18,8 @@ from app.db.session import Base
 
 __all__ = [
     "AgentExecutionStep",
+    "ActionRecommendation",
+    "AuditLogEvent",
     "Base",
     "Comment",
     "EscalationDecision",

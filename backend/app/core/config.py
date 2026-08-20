@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     stale_issue_days: int = 30
     high_priority_score_threshold: float = 0.62
     critical_priority_score_threshold: float = 0.82
+    allow_label_actions: bool = True
+    allow_comment_actions: bool = True
+    require_human_approval: bool = True
+    allowed_write_repository: str = "romil569/RepoGuardian-Demo"
+    max_comment_length: int = 1200
+    duplicate_comment_threshold: float = 0.45
+    needs_info_comment_threshold: int = 35
+    security_actions_require_manual_review: bool = True
 
     def validate_policy(self) -> None:
         if not 0 <= self.duplicate_possible_threshold < self.duplicate_very_likely_threshold <= 1:
@@ -30,6 +38,14 @@ class Settings(BaseSettings):
             raise ValueError("Stale issue days must be positive")
         if not 0 <= self.high_priority_score_threshold < self.critical_priority_score_threshold <= 1:
             raise ValueError("Priority thresholds must satisfy 0 <= high < critical <= 1")
+        if "/" not in self.allowed_write_repository:
+            raise ValueError("Allowed write repository must be in owner/name format")
+        if self.max_comment_length < 80:
+            raise ValueError("Max comment length must allow a useful maintainer message")
+        if not 0 <= self.duplicate_comment_threshold <= 1:
+            raise ValueError("Duplicate comment threshold must be between 0 and 1")
+        if not 0 <= self.needs_info_comment_threshold <= 100:
+            raise ValueError("Needs-info comment threshold must be between 0 and 100")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

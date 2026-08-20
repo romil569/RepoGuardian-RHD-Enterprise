@@ -24,6 +24,8 @@ Evidence Validation
 ↓
 Health / Feedback / Evaluation
 ↓
+Human Review / Safe Actions / Audit
+↓
 Maintainer Dashboard
 
 ## Current Hackathon Implementation
@@ -40,15 +42,21 @@ Prompt 3 advanced intelligence lives in `backend/app/services/advanced_intellige
 
 Repository analytics expose deterministic health, weekly brief, and evaluation endpoints. Human feedback is stored in `human_feedback` and used only as labeled maintainer correction data; the evaluation endpoint reports `INSUFFICIENT_LABELED_DATA` until at least three labeled items exist.
 
+Prompt 4 adds an operational human-in-the-loop layer. Investigations create `ActionRecommendation` rows, but external writes never execute from the investigation itself. A maintainer reviews the recommendation, sees the proposed payload, approves or rejects, and then execution validates policy again server-side. Supported actions are intentionally limited to no action, labels, comments, request-more-information, possible-duplicate guidance, maintainer review escalation, and security review escalation. The system does not close issues, merge PRs, delete branches, delete issues, or disclose security details.
+
+All Prompt 4 workflow events write safe append-oriented `AuditLogEvent` records. Audit entries avoid secrets and private reasoning, and record repository, issue, investigation, action recommendation, actor, event type, timestamp, and a safe summary.
+
 Evidence is only displayed after validation against synchronized repository records. Fabricated source IDs, unknown source types, and cross-repository references are rejected.
 
-The frontend provides repository connection/synchronization, repository search, issue lists with analysis status, and an investigation detail view with confidence, completeness, duplicate candidates, security signal, release-regression signal, related pull requests, priority signals, telemetry, evidence links, recommended action, feedback controls, and execution timeline. The health page presents repository score dimensions, distributions, backlog trend, weekly brief, and evaluation status. The settings page shows non-secret runtime and policy configuration.
+The frontend provides repository connection/synchronization, repository search, issue lists with analysis status, and an investigation detail view with confidence, completeness, duplicate candidates, security signal, release-regression signal, related pull requests, priority signals, telemetry, verified evidence links, recommendation history, feedback controls, and execution timeline. The Review Queue presents pending actions, policy validation, action previews, and approve/reject/execute controls. The Audit Log demonstrates traceability and accountability. The health page presents repository score dimensions, distributions, backlog trend, weekly brief, and evaluation status. The settings page shows non-secret runtime and policy configuration.
 
 ## Future Enterprise Architecture
 
 Future production work may add:
 
 - GitHub App authentication
+- GitHub OAuth / GitHub App identity
+- Organization membership checks
 - Webhook ingestion
 - Redis or queue-backed workers
 - Distributed sync/indexing workers
@@ -56,8 +64,9 @@ Future production work may add:
 - Advanced embeddings and reranking
 - Policy engine for escalation
 - Feedback-driven calibration dashboards
+- Enterprise policy engine
 - RBAC and tenant-aware authorization
-- Audit logs
+- Enterprise audit retention
 - Observability and alerting
 - Secure maintainer write actions
 

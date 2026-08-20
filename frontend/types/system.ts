@@ -79,6 +79,7 @@ export type Investigation = {
   summary: string;
   investigation_trace: Array<{ step_number: number; tool_name: string; status: string; duration_ms: number; summary: string }>;
   telemetry?: { duration_ms: number; agent_steps: number; retrieval_calls: number; github_calls: number; ai_provider_calls: number; retrieved_evidence_sources: number; error_count: number; final_status: string; token_usage?: number | null };
+  action_recommendations?: ActionRecommendation[];
 };
 
 export type DuplicateCandidate = {
@@ -139,6 +140,14 @@ export type PolicySettings = {
   high_priority_score_threshold: number;
   critical_priority_score_threshold: number;
   repo_sync_interval_minutes: number;
+  allow_label_actions: boolean;
+  allow_comment_actions: boolean;
+  require_human_approval: boolean;
+  allowed_write_repository: string;
+  max_comment_length: number;
+  duplicate_comment_threshold: number;
+  needs_info_comment_threshold: number;
+  security_actions_require_manual_review: boolean;
 };
 
 export type FeedbackResponse = {
@@ -152,4 +161,70 @@ export type FeedbackResponse = {
   corrected_value?: string | null;
   comment?: string | null;
   created_at: string;
+};
+
+export type ActionRecommendation = {
+  id: number;
+  repository_id: number;
+  repository?: string | null;
+  issue_id: number;
+  issue_number?: number | null;
+  issue_title?: string | null;
+  issue_url?: string | null;
+  investigation_id: number;
+  investigation_summary?: string | null;
+  priority?: string | null;
+  escalation?: string | null;
+  action_type: string;
+  status: string;
+  recommended_payload: Record<string, unknown>;
+  reason: string;
+  confidence: number;
+  policy_decision: string;
+  created_at: string;
+  updated_at: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejected_by?: string | null;
+  rejected_at?: string | null;
+  executed_at?: string | null;
+  execution_status?: string | null;
+  execution_result?: Record<string, unknown> | null;
+  failure_reason?: string | null;
+  security_signal?: string | null;
+  duplicate_state?: string | null;
+  policy_validation?: { decision: string; reason: string };
+};
+
+export type AuditLogEvent = {
+  id: number;
+  repository_id?: number | null;
+  issue_id?: number | null;
+  investigation_id?: number | null;
+  action_recommendation_id?: number | null;
+  actor: string;
+  event_type: string;
+  safe_summary: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AuditLogResponse = {
+  total: number;
+  limit: number;
+  offset: number;
+  items: AuditLogEvent[];
+};
+
+export type IssueHistory = {
+  recommendations: ActionRecommendation[];
+  feedback: Array<{
+    id: number;
+    target_type: string;
+    original_value: string;
+    feedback_status: string;
+    corrected_value?: string | null;
+    comment?: string | null;
+    created_at: string;
+  }>;
 };

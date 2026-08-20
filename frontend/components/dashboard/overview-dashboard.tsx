@@ -1,16 +1,18 @@
 "use client";
 
-import { Activity, AlertTriangle, Database, Github, Info, ShieldCheck } from "lucide-react";
+import { Activity, AlertTriangle, ClipboardList, Database, FileClock, Github, Info, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { fetchRepositories, fetchRepositoryHealth, fetchSystemStatus, fetchWeeklyBrief } from "@/services/system";
-import type { Repository, RepositoryHealth, SystemStatus, WeeklyBrief } from "@/types/system";
+import { fetchAuditLog, fetchRepositories, fetchRepositoryHealth, fetchReviewQueue, fetchSystemStatus, fetchWeeklyBrief } from "@/services/system";
+import type { ActionRecommendation, AuditLogEvent, Repository, RepositoryHealth, SystemStatus, WeeklyBrief } from "@/types/system";
 
 export function OverviewDashboard() {
   const [system, setSystem] = useState<SystemStatus | null>(null);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [health, setHealth] = useState<RepositoryHealth | null>(null);
   const [brief, setBrief] = useState<WeeklyBrief | null>(null);
+  const [queue, setQueue] = useState<ActionRecommendation[]>([]);
+  const [audit, setAudit] = useState<AuditLogEvent[]>([]);
   const [status, setStatus] = useState("Loading repository intelligence");
 
   useEffect(() => {
@@ -23,9 +25,11 @@ export function OverviewDashboard() {
         setStatus("Connect and sync a repository first");
         return;
       }
-      const [loadedHealth, loadedBrief] = await Promise.all([fetchRepositoryHealth(repo.id), fetchWeeklyBrief(repo.id)]);
+      const [loadedHealth, loadedBrief, pendingQueue, auditLog] = await Promise.all([fetchRepositoryHealth(repo.id), fetchWeeklyBrief(repo.id), fetchReviewQueue("PENDING"), fetchAuditLog({ limit: 5 })]);
       setHealth(loadedHealth);
       setBrief(loadedBrief);
+      setQueue(pendingQueue);
+      setAudit(auditLog.items);
       setStatus("Live repository intelligence loaded");
     }
     load().catch((error: Error) => setStatus(error.message));
@@ -33,15 +37,20 @@ export function OverviewDashboard() {
 
   return (
     <section className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
         <Metric icon={Activity} label="Health Score" value={health ? `${health.overall_score}` : "--"} detail={health?.health_state ?? status} />
         <Metric icon={AlertTriangle} label="Open Issues" value={health?.signals.open_issue_count ?? "--"} detail="synchronized backlog" />
         <Metric icon={ShieldCheck} label="High Priority" value={health?.signals.high_priority_count ?? "--"} detail="maintainer review load" />
+        <Metric icon={AlertTriangle} label="Critical" value={health?.signals.critical_count ?? "--"} detail="critical priority items" />
+        <Metric icon={ClipboardList} label="Duplicates" value={health?.signals.possible_duplicate_count ?? "--"} detail="possible duplicate decisions" />
         <Metric icon={Info} label="Needs Info" value={health?.signals.needs_information_count ?? "--"} detail="blocked triage items" />
+        <Metric icon={ShieldCheck} label="Security Review" value={queue.filter((item) => item.action_type === "ESCALATE_FOR_SECURITY_REVIEW").length} detail="pending safe review" />
+        <Metric icon={ClipboardList} label="Pending Actions" value={queue.length} detail="awaiting maintainer approval" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-md border border-line bg-white p-5">
+        <div className="space-y-4">
+          <div className="rounded-md border border-line bg-white p-5">
           <h2 className="text-sm font-semibold">Weekly Brief</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">{brief?.summary ?? status}</p>
           <div className="mt-5 grid gap-3 md:grid-cols-4">
@@ -49,6 +58,22 @@ export function OverviewDashboard() {
             <Mini label="Needs Info" value={brief?.needs_information ?? "--"} />
             <Mini label="PR Activity" value={brief?.recent_pr_activity ?? "--"} />
             <Mini label="Releases" value={brief?.release_activity ?? "--"} />
+          </div>
+          </div>
+          <div className="rounded-md border border-line bg-white p-5">
+            <div className="flex items-center gap-2">
+              <FileClock size={18} className="text-signal" aria-hidden="true" />
+              <h2 className="text-sm font-semibold">Recent Audit Events</h2>
+            </div>
+            <div className="mt-3 space-y-2">
+              {audit.map((item) => (
+                <div key={item.id} className="rounded-md border border-line p-3 text-sm">
+                  <div className="font-medium">{item.event_type}</div>
+                  <p className="mt-1 text-xs text-slate-600">{item.safe_summary}</p>
+                </div>
+              ))}
+              {!audit.length ? <p className="text-sm text-slate-600">No audit events recorded yet.</p> : null}
+            </div>
           </div>
         </div>
 

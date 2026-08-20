@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.agents.tools.analysis import ALLOWED_CLASSIFICATIONS, ALLOWED_ESCALATIONS, ALLOWED_PRIORITIES
 from app.db.models import HumanFeedback, Investigation
 from app.db.session import get_db
+from app.services.audit import log_audit_event
 
 router = APIRouter(prefix="/api/investigations", tags=["investigations"])
 
@@ -74,6 +75,16 @@ def create_feedback(investigation_id: int, request: FeedbackRequest, db: Session
         comment=request.comment,
     )
     db.add(feedback)
+    log_audit_event(
+        db,
+        "FEEDBACK_SUBMITTED",
+        f"Feedback submitted for {request.target_type}.",
+        actor="local-maintainer",
+        repository_id=investigation.repository_id,
+        issue_id=investigation.issue_id,
+        investigation_id=investigation.id,
+        metadata={"target_type": request.target_type, "feedback_status": request.feedback_status},
+    )
     db.commit()
     db.refresh(feedback)
     return feedback_dict(feedback)

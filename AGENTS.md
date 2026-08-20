@@ -1,6 +1,6 @@
 # RepoGuardian Agent Notes
 
-RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation. Prompt 3 extends that pipeline with advanced duplicate detection, context-aware completeness, priority scoring, security signals, release-regression analysis, related PR intelligence, repository health, weekly brief, human feedback, evaluation metrics, and telemetry.
+RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation. Prompt 3 extends that pipeline with advanced duplicate detection, context-aware completeness, priority scoring, security signals, release-regression analysis, related PR intelligence, repository health, weekly brief, human feedback, evaluation metrics, and telemetry. Prompt 4 adds a human-in-the-loop maintainer workflow with safe action recommendations, review queue, approval/rejection, policy validation, GitHub action execution guards, and audit logging.
 
 ## Architecture
 
@@ -15,6 +15,10 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - `backend/app/api/routes/analytics.py`: health, weekly brief, and evaluation endpoints.
 - `backend/app/api/routes/investigations.py`: human feedback endpoints for completed investigations.
 - `backend/app/api/routes/settings.py`: non-secret policy settings endpoint.
+- `backend/app/services/action_recommendations.py`: Prompt 4 recommendation, policy, approval, execution, and idempotency logic.
+- `backend/app/services/audit.py`: append-oriented safe audit events.
+- `backend/app/api/routes/action_recommendations.py`: review queue and action workflow endpoints.
+- `backend/app/api/routes/audit_log.py`: audit log API.
 - `backend/app/services/evidence.py`: strict evidence source validation.
 - `frontend/`: Next.js, TypeScript, Tailwind CSS, repository sync/search UI, investigation UI, health dashboards, feedback controls, and non-secret settings panels.
 - `infrastructure/`: database initialization and future deployment assets.
@@ -39,6 +43,9 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Weekly brief: `GET /api/repositories/{id}/brief/weekly`
 - Evaluation: `GET /api/repositories/{id}/evaluation`
 - Feedback: `POST /api/investigations/{id}/feedback`
+- Review queue: `GET /api/review-queue`
+- Approve/reject/execute: `POST /api/action-recommendations/{id}/approve`, `/reject`, `/execute`
+- Audit log: `GET /api/audit-log`
 
 ## Data Backends
 
@@ -58,3 +65,5 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Preserve repository isolation and run relevant tests after meaningful changes.
 - Live AI provider calls require `OPENAI_API_KEY`; without it, deterministic tools must return `AI provider not configured` behavior rather than fabricating AI output.
 - Policy settings exposed to the frontend must stay non-secret.
+- External GitHub writes must go through `ActionRecommendation` approval and server-side policy validation.
+- Prompt 4 uses `local-maintainer` as a hackathon reviewer identity only; do not describe it as production RBAC.

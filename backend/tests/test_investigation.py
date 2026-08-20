@@ -55,4 +55,5 @@ def test_investigation_schema_and_allowed_values(db_session):
     assert result["escalation"]["decision"] in ALLOWED_ESCALATIONS
     assert result["escalation"]["decision"] == "NEEDS_INFORMATION"
     assert "investigation_trace" in result
+    assert result["action_recommendations"][0]["action_type"] == "REQUEST_MORE_INFORMATION"
     assert all(0.0 <= float(result[key]["confidence"]) <= 1.0 for key in ["classification", "priority", "escalation"])

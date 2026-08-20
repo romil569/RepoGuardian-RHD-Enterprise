@@ -110,6 +110,33 @@ class GitHubCliService:
             ]
         ) or []
 
+    def get_label(self, full_name: str, label: str) -> dict[str, Any]:
+        return self._run(["api", f"repos/{full_name}/labels/{label}"])
+
+    def add_issue_label(self, full_name: str, number: int, label: str) -> dict[str, Any]:
+        return self._run(
+            [
+                "api",
+                f"repos/{full_name}/issues/{number}/labels",
+                "-X",
+                "POST",
+                "-f",
+                f"labels[]={label}",
+            ]
+        )
+
+    def post_issue_comment(self, full_name: str, number: int, body: str) -> dict[str, Any]:
+        return self._run(
+            [
+                "api",
+                f"repos/{full_name}/issues/{number}/comments",
+                "-f",
+                f"body={body}",
+                "--jq",
+                "{id,html_url,body}",
+            ]
+        )
+
     def get_pull_requests(self, full_name: str, state: str = "all", limit: int = 100) -> list[dict[str, Any]]:
         return self._run(
             [

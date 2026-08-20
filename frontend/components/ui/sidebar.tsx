@@ -1,11 +1,16 @@
-import { Activity, GitBranch, Home, SearchCheck, Settings, ShieldCheck } from "lucide-react";
+import { Activity, ClipboardList, FileClock, GitBranch, Home, ListChecks, SearchCheck, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 const items = [
   { href: "/", label: "Overview", icon: Home },
   { href: "/repositories", label: "Repositories", icon: GitBranch },
+  { href: "/issues", label: "Issues", icon: ListChecks },
   { href: "/investigations", label: "Investigations", icon: SearchCheck },
+  { href: "/review-queue", label: "Review Queue", icon: ClipboardList },
   { href: "/health", label: "Repository Health", icon: Activity },
+  { href: "/weekly", label: "Weekly Brief", icon: FileClock },
+  { href: "/evaluation", label: "Evaluation", icon: ShieldCheck },
+  { href: "/audit-log", label: "Audit Log", icon: FileClock },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
 

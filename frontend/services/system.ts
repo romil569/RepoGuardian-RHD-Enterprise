@@ -3,7 +3,10 @@ import type {
   Evaluation,
   FeedbackResponse,
   Investigation,
+  ActionRecommendation,
+  AuditLogResponse,
   Issue,
+  IssueHistory,
   PolicySettings,
   PullRequest,
   Release,
@@ -67,6 +70,10 @@ export function investigateIssue(issueId: number): Promise<Investigation> {
   return request<Investigation>(`/api/issues/${issueId}/investigate`, { method: "POST" });
 }
 
+export function fetchIssueHistory(issueId: number): Promise<IssueHistory> {
+  return request<IssueHistory>(`/api/issues/${issueId}/history`);
+}
+
 export function fetchRepositoryHealth(repositoryId: number): Promise<RepositoryHealth> {
   return request<RepositoryHealth>(`/api/repositories/${repositoryId}/health`);
 }
@@ -88,4 +95,35 @@ export function submitFeedback(
   body: { target_type: string; original_value: string; feedback_status: string; corrected_value?: string; comment?: string }
 ): Promise<FeedbackResponse> {
   return request<FeedbackResponse>(`/api/investigations/${investigationId}/feedback`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export function fetchReviewQueue(filter?: string): Promise<ActionRecommendation[]> {
+  const query = filter ? `?filter=${encodeURIComponent(filter)}` : "";
+  return request<ActionRecommendation[]>(`/api/review-queue${query}`);
+}
+
+export function fetchActionRecommendation(id: number): Promise<ActionRecommendation> {
+  return request<ActionRecommendation>(`/api/action-recommendations/${id}`);
+}
+
+export function approveActionRecommendation(id: number): Promise<ActionRecommendation> {
+  return request<ActionRecommendation>(`/api/action-recommendations/${id}/approve`, { method: "POST", body: JSON.stringify({ actor: "local-maintainer" }) });
+}
+
+export function rejectActionRecommendation(id: number, reason?: string): Promise<ActionRecommendation> {
+  return request<ActionRecommendation>(`/api/action-recommendations/${id}/reject`, { method: "POST", body: JSON.stringify({ actor: "local-maintainer", reason }) });
+}
+
+export function executeActionRecommendation(id: number): Promise<ActionRecommendation> {
+  return request<ActionRecommendation>(`/api/action-recommendations/${id}/execute`, { method: "POST", body: JSON.stringify({ actor: "local-maintainer" }) });
+}
+
+export function fetchAuditLog(params?: { repository_id?: number; issue_id?: number; event_type?: string; limit?: number }): Promise<AuditLogResponse> {
+  const query = new URLSearchParams();
+  if (params?.repository_id) query.set("repository_id", String(params.repository_id));
+  if (params?.issue_id) query.set("issue_id", String(params.issue_id));
+  if (params?.event_type) query.set("event_type", params.event_type);
+  if (params?.limit) query.set("limit", String(params.limit));
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return request<AuditLogResponse>(`/api/audit-log${suffix}`);
 }

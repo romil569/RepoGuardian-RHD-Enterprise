@@ -28,6 +28,7 @@ class Issue(Base):
 
     repository: Mapped["Repository"] = relationship(back_populates="issues")
     investigations: Mapped[list["Investigation"]] = relationship(back_populates="issue")
+    action_recommendations: Mapped[list["ActionRecommendation"]] = relationship(back_populates="issue")
 
 
 class PullRequest(Base):
@@ -137,6 +138,7 @@ class Investigation(Base):
     issue: Mapped[Issue] = relationship(back_populates="investigations")
     evidence: Mapped[list["InvestigationEvidence"]] = relationship(back_populates="investigation", cascade="all, delete-orphan")
     steps: Mapped[list["AgentExecutionStep"]] = relationship(back_populates="investigation", cascade="all, delete-orphan")
+    action_recommendations: Mapped[list["ActionRecommendation"]] = relationship(back_populates="investigation", cascade="all, delete-orphan")
 
 
 class InvestigationEvidence(Base):
@@ -196,3 +198,47 @@ class HumanFeedback(Base):
     corrected_value: Mapped[str | None] = mapped_column(String(128), nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ActionRecommendation(Base):
+    __tablename__ = "action_recommendations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    issue_id: Mapped[int] = mapped_column(ForeignKey("issues.id"), index=True)
+    investigation_id: Mapped[int] = mapped_column(ForeignKey("investigations.id"), index=True)
+    action_type: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(64), default="PENDING", index=True)
+    recommended_payload: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    reason: Mapped[str] = mapped_column(Text)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    policy_decision: Mapped[str] = mapped_column(String(64), default="PENDING_REVIEW")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    approved_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rejected_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    execution_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    execution_result: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_signature: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+
+    issue: Mapped[Issue] = relationship(back_populates="action_recommendations")
+    investigation: Mapped[Investigation] = relationship(back_populates="action_recommendations")
+
+
+class AuditLogEvent(Base):
+    __tablename__ = "audit_log_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int | None] = mapped_column(ForeignKey("repositories.id"), nullable=True, index=True)
+    issue_id: Mapped[int | None] = mapped_column(ForeignKey("issues.id"), nullable=True, index=True)
+    investigation_id: Mapped[int | None] = mapped_column(ForeignKey("investigations.id"), nullable=True, index=True)
+    action_recommendation_id: Mapped[int | None] = mapped_column(ForeignKey("action_recommendations.id"), nullable=True, index=True)
+    actor: Mapped[str] = mapped_column(String(255), default="system")
+    event_type: Mapped[str] = mapped_column(String(128), index=True)
+    safe_summary: Mapped[str] = mapped_column(Text)
+    metadata_json: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

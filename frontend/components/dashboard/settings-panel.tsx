@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings2, SlidersHorizontal } from "lucide-react";
+import { Github, Settings2, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { fetchPolicySettings, fetchSystemStatus } from "@/services/system";
@@ -38,13 +38,30 @@ export function SettingsPanel() {
           <SettingRow label="Demo repository" value={system?.demo_repository ?? "--"} />
         </Panel>
 
-        <Panel icon={SlidersHorizontal} title="Policy">
+        <Panel icon={SlidersHorizontal} title="Duplicate Detection">
           <SettingRow label="Duplicate possible" value={format(policy?.duplicate_possible_threshold)} />
           <SettingRow label="Duplicate very likely" value={format(policy?.duplicate_very_likely_threshold)} />
+          <SettingRow label="Duplicate comment threshold" value={format(policy?.duplicate_comment_threshold)} />
+        </Panel>
+
+        <Panel icon={ShieldCheck} title="Priority">
           <SettingRow label="Security escalation" value={format(policy?.security_escalation_threshold)} />
           <SettingRow label="Stale issue days" value={format(policy?.stale_issue_days)} />
           <SettingRow label="High priority score" value={format(policy?.high_priority_score_threshold)} />
           <SettingRow label="Critical priority score" value={format(policy?.critical_priority_score_threshold)} />
+          <SettingRow label="Needs-info threshold" value={format(policy?.needs_info_comment_threshold)} />
+        </Panel>
+
+        <Panel icon={Github} title="Automation Safety">
+          <SettingRow label="Human Approval Required" value={policy?.require_human_approval ? "ON" : "OFF"} />
+          <SettingRow label="Label Actions" value={policy?.allow_label_actions ? "ON" : "OFF"} />
+          <SettingRow label="Comment Actions" value={policy?.allow_comment_actions ? "ON" : "OFF"} />
+          <SettingRow label="Security Manual Review" value={policy?.security_actions_require_manual_review ? "ON" : "OFF"} />
+        </Panel>
+
+        <Panel icon={Github} title="GitHub Actions">
+          <SettingRow label="Allowed Write Repository" value={policy?.allowed_write_repository ?? "--"} />
+          <SettingRow label="Max Comment Length" value={format(policy?.max_comment_length)} />
           <SettingRow label="Sync interval minutes" value={format(policy?.repo_sync_interval_minutes)} />
         </Panel>
       </div>

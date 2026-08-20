@@ -5,8 +5,8 @@
 import { ExternalLink, MessageSquare, PlayCircle, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { fetchIssues, fetchRepositories, investigateIssue, submitFeedback } from "@/services/system";
-import type { Investigation, Issue, Repository } from "@/types/system";
+import { fetchIssueHistory, fetchIssues, fetchRepositories, investigateIssue, submitFeedback } from "@/services/system";
+import type { ActionRecommendation, Investigation, Issue, IssueHistory, Repository } from "@/types/system";
 
 export function InvestigationWorkspace() {
   const [repository, setRepository] = useState<Repository | null>(null);
@@ -16,6 +16,7 @@ export function InvestigationWorkspace() {
   const [status, setStatus] = useState("Loading synchronized issues");
   const [busy, setBusy] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState("No feedback submitted");
+  const [history, setHistory] = useState<IssueHistory | null>(null);
 
   async function load() {
     const repos = await fetchRepositories();
@@ -42,6 +43,7 @@ export function InvestigationWorkspace() {
     try {
       const result = await investigateIssue(issueId);
       setInvestigation(result);
+      setHistory(await fetchIssueHistory(issueId));
       setFeedbackStatus("No feedback submitted");
       setStatus("Investigation complete");
       if (repository) {
@@ -66,6 +68,7 @@ export function InvestigationWorkspace() {
         comment: `Maintainer marked classification as ${feedback_status}`
       });
       setFeedbackStatus(`Feedback recorded: ${feedback_status}`);
+      setHistory(await fetchIssueHistory(investigation.issue.id));
     } catch (error) {
       setFeedbackStatus(error instanceof Error ? error.message : "Unable to submit feedback");
     }
@@ -199,14 +202,33 @@ export function InvestigationWorkspace() {
                 <span className="text-sm text-slate-600">{feedbackStatus}</span>
               </div>
             </Panel>
+            <Panel title="Action History">
+              <div className="space-y-2">
+                {(history?.recommendations ?? investigation.action_recommendations ?? []).map((item) => (
+                  <RecommendationRow key={item.id} item={item} />
+                ))}
+                {history?.feedback.map((item) => (
+                  <div key={`feedback-${item.id}`} className="rounded-md border border-line p-3 text-sm">
+                    <span className="font-semibold">Feedback {item.feedback_status}</span>
+                    <p className="mt-1 text-xs text-slate-600">{item.target_type}: {item.original_value}{item.corrected_value ? ` -> ${item.corrected_value}` : ""}</p>
+                  </div>
+                ))}
+                {!(history?.recommendations.length ?? investigation.action_recommendations?.length ?? 0) && !(history?.feedback.length ?? 0) ? <Small>No action history yet</Small> : null}
+              </div>
+            </Panel>
             <Panel title="Evidence">
               <div className="space-y-2">
                 {investigation.evidence.map((item) => (
                   <a key={`${item.source_type}-${item.title}-${item.github_number}`} href={item.source_url ?? "#"} target="_blank" className="block rounded-md border border-line p-3 hover:bg-panel">
-                    <div className="text-sm font-semibold">{item.source_type} {item.github_number ? `#${item.github_number}` : ""}: {item.title}</div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                      <span className="rounded bg-teal-50 px-2 py-1 text-xs text-signal">VERIFIED SOURCE</span>
+                      <span>{item.source_type} {item.github_number ? `#${item.github_number}` : ""}: {item.title}</span>
+                    </div>
                     <p className="mt-1 text-xs text-slate-600">{item.why_relevant}</p>
+                    <p className="mt-1 text-xs text-slate-500">Relevance score {item.retrieval_score.toFixed(2)}</p>
                   </a>
                 ))}
+                {!investigation.evidence.length ? <Small>INSUFFICIENT EVIDENCE</Small> : null}
               </div>
             </Panel>
             <Panel title="Operational Timeline">
@@ -251,6 +273,19 @@ function Mini({ label, value }: { label: string; value: number | string }) {
     <div className="rounded-md border border-line bg-panel p-3">
       <div className="text-xs text-slate-600">{label}</div>
       <div className="mt-1 font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function RecommendationRow({ item }: { item: ActionRecommendation }) {
+  return (
+    <div className="rounded-md border border-line p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-semibold">{item.action_type}</span>
+        <span className="rounded bg-panel px-2 py-1 text-xs font-medium">{item.status}</span>
+      </div>
+      <p className="mt-1 text-xs text-slate-600">{item.reason}</p>
+      <p className="mt-1 text-xs text-slate-500">Confidence {item.confidence.toFixed(2)}. Confidence is an internal decision signal, not a guarantee.</p>
     </div>
   );
 }

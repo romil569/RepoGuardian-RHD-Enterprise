@@ -27,13 +27,20 @@ RepoGuardian is an industry-oriented AI/ML hackathon project for an agentic open
 - `POST /api/investigations/{id}/feedback`
 - `GET /api/investigations/{id}/feedback`
 - `GET /api/settings/policy`
+- `GET /api/review-queue`
+- `GET /api/action-recommendations/{id}`
+- `POST /api/action-recommendations/{id}/approve`
+- `POST /api/action-recommendations/{id}/reject`
+- `POST /api/action-recommendations/{id}/execute`
+- `GET /api/audit-log`
 - Repository, issue, PR, release, document, investigation, evidence, escalation, and trace models
 - Human feedback model for labeled maintainer corrections
+- Human-in-the-loop action recommendations, review queue, approval/rejection workflow, safe action execution, and audit logging
 - GitHub CLI-backed local integration
 - Project-aware retrieval with repository filtering
 - Multi-step deterministic investigation pipeline with advanced duplicate, completeness, priority, security, release-regression, related PR, telemetry, and escalation signals
 - Repository health score, weekly brief, and evaluation metrics
-- Frontend repository sync/search, investigation, feedback, health, weekly brief, evaluation, and settings UI
+- Frontend repository sync/search, investigation, review queue, audit log, feedback, health, weekly brief, evaluation, and settings UI
 - Docker Compose configuration for local PostgreSQL and pgvector
 
 ## Demo Repository
@@ -133,6 +140,8 @@ npm run build
 7. Go to Investigations and run analysis on synchronized issues.
 8. Review duplicate, security, regression, priority, telemetry, evidence, and feedback panels.
 9. Go to Repository Health for the score, weekly brief, and evaluation status.
+10. Open Review Queue to inspect the exact proposed action payload before approval.
+11. Open Audit Log to show traceability for recommendations, approvals, rejections, and executed actions.
 
 ## Next Development Stages
 
