@@ -1,6 +1,4 @@
 from contextlib import asynccontextmanager
-from collections import defaultdict, deque
-from time import monotonic
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -13,6 +11,7 @@ from app.api.routes.analytics import router as analytics_router
 from app.api.routes.audit_log import router as audit_log_router
 from app.api.routes.issues import router as issues_router
 from app.api.routes.investigations import router as investigations_router
+from app.api.routes.jobs import router as jobs_router
 from app.api.routes.platform import router as platform_router
 from app.api.routes.repositories import router as repositories_router
 from app.api.routes.rhd import router as rhd_router
@@ -20,19 +19,22 @@ from app.api.routes.settings import router as settings_router
 from app.api.routes.system import router as system_router
 from app.core.config import settings
 from app.db.session import initialize_database
+from app.services.rate_limit import check_rate_limit
 from app.services.scheduler import scheduler
 
 
-_rate_buckets: dict[str, deque[float]] = defaultdict(deque)
 _expensive_paths = ("/sync", "/onboard", "/query", "/investigate", "/rag/query")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    initialize_database()
-    scheduler.start()
+    if not settings.is_serverless or settings.enable_startup_schema_create:
+        initialize_database()
+    if not settings.is_serverless:
+        scheduler.start()
     yield
-    await scheduler.stop()
+    if not settings.is_serverless:
+        await scheduler.stop()
 
 
 def create_app() -> FastAPI:
@@ -49,17 +51,13 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def public_rate_limit(request: Request, call_next):
         if settings.public_analysis_mode:
-            client = request.client.host if request.client else "unknown"
+            forwarded_for = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            client = forwarded_for or (request.client.host if request.client else "unknown")
             expensive = any(marker in request.url.path for marker in _expensive_paths)
             limit = settings.rate_limit_expensive_max_requests if expensive else settings.rate_limit_max_requests
-            key = f"{client}:{'expensive' if expensive else 'general'}"
-            now = monotonic()
-            bucket = _rate_buckets[key]
-            while bucket and now - bucket[0] > settings.rate_limit_window_seconds:
-                bucket.popleft()
-            if len(bucket) >= limit:
+            scope = "expensive" if expensive else "general"
+            if not check_rate_limit(f"{client}:{scope}", scope, limit):
                 return JSONResponse({"detail": "Rate limit reached. Please wait before running more repository analysis."}, status_code=429)
-            bucket.append(now)
         return await call_next(request)
 
     app.include_router(health_router)
@@ -69,6 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(platform_router)
     app.include_router(issues_router)
     app.include_router(investigations_router)
+    app.include_router(jobs_router)
     app.include_router(analytics_router)
     app.include_router(action_recommendations_router)
     app.include_router(audit_log_router)

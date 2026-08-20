@@ -17,6 +17,7 @@ import type {
   RHDToolSpec,
   EnterpriseReadiness,
   RHDInitialScan,
+  RHDJobStatus,
   RHDOnboardingResponse,
   RHDQueryResponse,
   RHDReview,
@@ -140,6 +141,14 @@ export function onboardRepositoryWithRHD(repository: string, runSync = true): Pr
   return request<RHDOnboardingResponse>("/api/rhd/onboard", { method: "POST", body: JSON.stringify({ repository, run_sync: runSync }) });
 }
 
+export function fetchRHDJob(jobId: string): Promise<RHDJobStatus> {
+  return request<RHDJobStatus>(`/api/jobs/${jobId}`);
+}
+
+export function advanceRHDJob(jobId: string): Promise<RHDJobStatus> {
+  return request<RHDJobStatus>(`/api/jobs/${jobId}/advance`, { method: "POST" });
+}
+
 export function fetchRHDInitialScan(repositoryId: number): Promise<RHDInitialScan> {
   return request<RHDInitialScan>(`/api/rhd/repositories/${repositoryId}/initial-scan`);
 }
@@ -149,7 +158,7 @@ export function fetchRHDReview(repositoryId: number): Promise<RHDReview> {
 }
 
 export function askRHD(repositoryId: number, question: string, sessionContext?: Record<string, unknown>): Promise<RHDQueryResponse> {
-  return request<RHDQueryResponse>("/api/rhd/query", { method: "POST", body: JSON.stringify({ repository_id: repositoryId, question, session_context: sessionContext }) });
+  return request<RHDQueryResponse>("/api/rhd/query", { method: "POST", body: JSON.stringify({ repository_id: repositoryId, question, session_context: sessionContext, session_id: sessionContext?.session_id }) });
 }
 
 export function fetchModelGatewayStatus(): Promise<{ providers: ModelProviderStatus[]; priority: string[] }> {

@@ -24,15 +24,18 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  advanceRHDJob,
   askRHD,
   fetchAuditLog,
   fetchRepositories,
   fetchRHDInitialScan,
+  fetchRHDJob,
   fetchRHDReview,
   fetchSystemStatus,
   onboardRepositoryWithRHD,
 } from "@/services/system";
 import type { AuditLogEvent, Repository, RHDInitialScan, RHDQueryResponse, RHDReview, SystemStatus } from "@/types/system";
+import type { RHDJobStatus } from "@/types/system";
 
 const demoRepository = process.env.NEXT_PUBLIC_DEMO_GITHUB_REPOSITORY ?? "romil569/RepoGuardian-Demo";
 
@@ -78,6 +81,7 @@ export function OverviewDashboard() {
   const [repositoryInput, setRepositoryInput] = useState(`https://github.com/${demoRepository}`);
   const [question, setQuestion] = useState("What should I fix first?");
   const [answer, setAnswer] = useState<RHDQueryResponse | null>(null);
+  const [job, setJob] = useState<RHDJobStatus | null>(null);
   const [sessionContext, setSessionContext] = useState<Record<string, unknown>>({});
   const [status, setStatus] = useState("READY");
   const [busy, setBusy] = useState(false);
@@ -114,14 +118,40 @@ export function OverviewDashboard() {
     try {
       const result = await onboardRepositoryWithRHD(repositoryInput, true);
       setRepository(result.repository);
-      setReview(result.review);
-      setScan(result.initial_scan);
+      if (result.job) {
+        setJob(result.job);
+        setStatus(result.job.stage_label);
+        await pollJob(result.job.id);
+        return;
+      }
+      setReview(result.review ?? null);
+      setScan(result.initial_scan ?? null);
       setAnswer(null);
       setStatus(result.access_mode === "READ_ONLY_PUBLIC" ? "READ_ONLY_ANALYSIS" : "READY");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "RHD onboarding failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function pollJob(jobId: string) {
+    let latest = await fetchRHDJob(jobId);
+    for (let attempt = 0; attempt < 14 && latest.status !== "COMPLETED" && latest.status !== "FAILED"; attempt += 1) {
+      latest = await advanceRHDJob(jobId);
+      setJob(latest);
+      setStatus(latest.bounded_initial_review ? `${latest.stage_label} / BOUNDED INITIAL REVIEW` : latest.stage_label);
+      if (latest.status !== "COMPLETED" && latest.status !== "FAILED") {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+    }
+    if (latest.status === "FAILED") {
+      throw new Error(latest.error ?? "Repository analysis job failed");
+    }
+    if (latest.review) {
+      setReview(latest.review);
+      setScan(latest.initial_scan ?? null);
+      setStatus(latest.bounded_initial_review ? "READY / BOUNDED INITIAL REVIEW" : "READY");
     }
   }
 
@@ -184,7 +214,7 @@ export function OverviewDashboard() {
           </div>
         </div>
 
-        <SystemPanel system={system} repository={review?.repository ?? repository} review={review} scan={scan} />
+        <SystemPanel system={system} repository={review?.repository ?? repository} review={review} scan={scan} job={job} />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -373,7 +403,7 @@ function RHDCoreVisual({ state, busy }: { state: string; busy: boolean }) {
   );
 }
 
-function SystemPanel({ system, repository, review, scan }: { system: SystemStatus | null; repository: Repository | null | undefined; review: RHDReview | null; scan: RHDInitialScan | null }) {
+function SystemPanel({ system, repository, review, scan, job }: { system: SystemStatus | null; repository: Repository | null | undefined; review: RHDReview | null; scan: RHDInitialScan | null; job: RHDJobStatus | null }) {
   return (
     <div className="rounded-md border border-line bg-white p-5">
       <div className="flex items-center gap-2">
@@ -385,6 +415,10 @@ function SystemPanel({ system, repository, review, scan }: { system: SystemStatu
         <Runtime label="Sync Status" value={repository?.last_synced_at ? new Date(repository.last_synced_at).toLocaleString() : "--"} />
         <Runtime label="Indexed Documents" value={String(review?.repository.indexed_documents ?? repository?.indexed_documents ?? "--")} />
         <Runtime label="Vector Backend" value={system?.vector_backend ?? "--"} />
+        <Runtime label="Frontend" value={system?.frontend_runtime ?? "Local Next.js"} />
+        <Runtime label="Backend" value={system?.backend_runtime ?? "FastAPI"} />
+        <Runtime label="Queue" value={system?.queue_backend ?? "--"} />
+        <Runtime label="Local Ollama" value={system?.local_ollama === "development_only" ? "Development Only" : system?.local_ollama ?? "--"} />
         <Runtime label="RAG Status" value={review?.evidence.length ? "repository-scoped evidence available" : "waiting for indexed evidence"} />
         <Runtime label="AI Provider" value={system?.live_ai_provider ?? system?.ai_provider ?? "--"} />
         <Runtime label="Deterministic Engine" value={system?.deterministic_intelligence ?? "--"} />
@@ -392,6 +426,18 @@ function SystemPanel({ system, repository, review, scan }: { system: SystemStatu
         <Runtime label="Human Policy Gate" value={review?.automation_level.external_action ?? "HUMAN_APPROVAL_REQUIRED"} />
         <Runtime label="Tool Count" value={String(toolkit.length)} />
       </dl>
+      {job ? (
+        <div className="mt-4 rounded-md border border-line bg-panel p-3">
+          <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase text-slate-500">
+            <span>{job.stage_label}</span>
+            <span>{job.progress}%</span>
+          </div>
+          <div className="mt-2 h-2 rounded bg-white">
+            <div className="h-2 rounded bg-signal" style={{ width: `${Math.max(0, Math.min(100, job.progress))}%` }} />
+          </div>
+          {job.bounded_initial_review ? <p className="mt-2 text-xs leading-5 text-slate-600">BOUNDED INITIAL REVIEW</p> : null}
+        </div>
+      ) : null}
       <div className="mt-4 rounded-md border border-line bg-panel p-3">
         <div className="text-xs font-bold uppercase text-slate-500">RHD Initial Scan</div>
         <div className="mt-2 max-h-44 space-y-2 overflow-auto">

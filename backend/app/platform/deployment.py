@@ -30,10 +30,10 @@ def deployment_profile() -> dict[str, object]:
         "supported_modes": ["LIGHTWEIGHT_LOCAL", "INDUSTRY_LOCAL", "MANAGED_CLOUD", "ENTERPRISE_AWS"],
         "managed_cloud": {
             "frontend": "Vercel-compatible Next.js",
-            "backend": "Render-compatible FastAPI service",
-            "database": "Provider-neutral PostgreSQL with optional pgvector",
-            "queue": "Redis preferred, Postgres fallback, local development fallback",
-            "model_gateway": "Ollama/local, optional cloud providers, deterministic fallback",
+            "backend": "Vercel Python serverless FastAPI",
+            "database": "Neon PostgreSQL with pgvector",
+            "queue": "Postgres serverless job queue, local development fallback",
+            "model_gateway": "Deterministic fallback, optional cloud providers, local Ollama development only",
         },
     }
 

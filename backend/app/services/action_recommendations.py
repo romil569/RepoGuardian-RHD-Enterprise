@@ -300,6 +300,8 @@ def _execute_comment(db: Session, service: GitHubCliService, repository: Reposit
 
 
 def execute_recommendation(db: Session, recommendation: ActionRecommendation, service: GitHubCliService | None = None, actor: str = MAINTAINER_ACTOR) -> ActionRecommendation:
+    if settings.github_write_mode == "disabled":
+        raise ActionWorkflowError("External GitHub writes are disabled")
     if recommendation.status != "APPROVED":
         raise ActionWorkflowError("Recommendation must be approved before execution")
     policy = validate_policy(db, recommendation)

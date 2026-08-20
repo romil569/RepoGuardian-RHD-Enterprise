@@ -5,6 +5,11 @@ export type SystemStatus = {
   demo_repository?: string;
   data_backend?: string;
   vector_backend?: string;
+  frontend_runtime?: string;
+  backend_runtime?: string;
+  queue_backend?: string;
+  rhd_status?: string;
+  local_ollama?: string;
   ai_provider?: string;
   ai_provider_mode?: string;
   live_ai_provider?: string;
@@ -331,8 +336,26 @@ export type RHDOnboardingResponse = {
   access_mode: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC";
   sync_result?: Record<string, number | string> | null;
   rhd_status: string;
-  initial_scan: RHDInitialScan;
-  review: RHDReview;
+  initial_scan?: RHDInitialScan;
+  review?: RHDReview;
+  job?: RHDJobStatus;
+};
+
+export type RHDJobStatus = {
+  id: string;
+  repository_id?: number | null;
+  job_type: string;
+  status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  stage?: string | null;
+  stage_label: string;
+  progress: number;
+  error?: string | null;
+  attempts: number;
+  max_attempts: number;
+  bounded_initial_review: boolean;
+  stage_results: Record<string, unknown>;
+  initial_scan?: RHDInitialScan;
+  review?: RHDReview;
 };
 
 export type ModelProviderStatus = {

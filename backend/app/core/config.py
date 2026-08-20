@@ -13,9 +13,16 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     public_analysis_mode: bool = False
     enable_public_write_actions: bool = False
+    github_write_mode: str = "enabled"
     rate_limit_window_seconds: int = 60
     rate_limit_max_requests: int = 120
     rate_limit_expensive_max_requests: int = 8
+    database_pool_size: int = 2
+    database_max_overflow: int = 2
+    database_pool_timeout_seconds: int = 5
+    database_pool_recycle_seconds: int = 300
+    run_startup_migrations: bool = False
+    enable_startup_schema_create: bool = True
     github_token: str | None = None
     openai_api_key: str | None = None
     ai_provider_mode: str = "auto"
@@ -58,6 +65,11 @@ class Settings(BaseSettings):
     job_timeout_seconds: int = 300
     max_initial_code_files: int = 500
     max_initial_code_bytes: int = 5_000_000
+    max_public_issues: int = 35
+    max_public_prs: int = 35
+    max_public_releases: int = 15
+    max_rhd_steps: int = 12
+    max_retrieval_results: int = 8
     max_code_file_bytes: int = 200_000
     code_scan_allowed_roots: str = ""
     max_ai_calls_per_investigation: int = 4
@@ -92,6 +104,8 @@ class Settings(BaseSettings):
             raise ValueError("Postgres runtime mode must be local or managed")
         if self.queue_backend not in {"local", "postgres", "redis"}:
             raise ValueError("Queue backend must be local, postgres, or redis")
+        if self.github_write_mode not in {"enabled", "disabled"}:
+            raise ValueError("GitHub write mode must be enabled or disabled")
         if self.rate_limit_window_seconds < 1:
             raise ValueError("Rate limit window must be positive")
         if self.rate_limit_max_requests < 1:
@@ -102,12 +116,24 @@ class Settings(BaseSettings):
             raise ValueError("Job max retries cannot be negative")
         if self.job_timeout_seconds < 1:
             raise ValueError("Job timeout must be positive")
+        if self.database_pool_size < 1 or self.database_max_overflow < 0:
+            raise ValueError("Database pool sizing must be bounded and positive")
+        if self.max_public_issues < 1 or self.max_public_prs < 1 or self.max_public_releases < 1:
+            raise ValueError("Public GitHub sync limits must be positive")
 
     @property
     def sqlalchemy_database_url(self) -> str:
         if self.database_url.startswith("postgresql://"):
             return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
         return self.database_url
+
+    @property
+    def is_managed_cloud(self) -> bool:
+        return self.deployment_mode == "MANAGED_CLOUD" or self.postgres_runtime_mode == "managed"
+
+    @property
+    def is_serverless(self) -> bool:
+        return self.is_managed_cloud and self.public_analysis_mode
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

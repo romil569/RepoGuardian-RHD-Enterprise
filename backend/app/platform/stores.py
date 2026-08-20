@@ -5,7 +5,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.db.models import IndexedDocument, Repository
+from app.db.models import IndexedDocument, Repository, RepositoryGraphEdge, RepositoryGraphNode
 from app.rag.retriever import SearchResult, search_repository_history
 
 
@@ -72,4 +72,49 @@ class LocalGraphStore:
             target = self.nodes.get(str(edge["target"]))
             if target:
                 matches.append({"edge": edge, "node": target})
+        return matches
+
+
+@dataclass
+class PostgresGraphStore:
+    db: Session
+    repository_id: int
+
+    def add_node(self, node_id: str, labels: list[str], properties: dict[str, object]) -> None:
+        row = self.db.query(RepositoryGraphNode).filter_by(repository_id=self.repository_id, node_id=node_id).one_or_none()
+        if row:
+            row.labels = labels
+            row.properties = properties
+            return
+        self.db.add(RepositoryGraphNode(repository_id=self.repository_id, node_id=node_id, labels=labels, properties=properties))
+
+    def add_edge(self, source_id: str, target_id: str, edge_type: str, properties: dict[str, object] | None = None) -> None:
+        source = self.db.query(RepositoryGraphNode).filter_by(repository_id=self.repository_id, node_id=source_id).one_or_none()
+        target = self.db.query(RepositoryGraphNode).filter_by(repository_id=self.repository_id, node_id=target_id).one_or_none()
+        if not source or not target:
+            raise ValueError("Graph edges require existing source and target nodes")
+        self.db.add(
+            RepositoryGraphEdge(
+                repository_id=self.repository_id,
+                source_node_id=source_id,
+                target_node_id=target_id,
+                edge_type=edge_type,
+                properties=properties or {},
+            )
+        )
+
+    def neighbors(self, node_id: str, edge_type: str | None = None) -> list[dict[str, object]]:
+        query = self.db.query(RepositoryGraphEdge).filter_by(repository_id=self.repository_id, source_node_id=node_id)
+        if edge_type:
+            query = query.filter_by(edge_type=edge_type)
+        matches = []
+        for edge in query.limit(100).all():
+            target = self.db.query(RepositoryGraphNode).filter_by(repository_id=self.repository_id, node_id=edge.target_node_id).one_or_none()
+            if target:
+                matches.append(
+                    {
+                        "edge": {"source": edge.source_node_id, "target": edge.target_node_id, "type": edge.edge_type, "properties": edge.properties},
+                        "node": {"id": target.node_id, "labels": target.labels, "properties": target.properties},
+                    }
+                )
         return matches

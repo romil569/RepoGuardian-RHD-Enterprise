@@ -114,6 +114,8 @@ class OllamaProvider:
     timeout_seconds: int = 60
 
     def configured(self) -> bool:
+        if settings.is_serverless:
+            return False
         try:
             with urlopen(f"{self.base_url.rstrip('/')}/api/tags", timeout=0.5) as response:
                 return 200 <= response.status < 500
@@ -122,6 +124,8 @@ class OllamaProvider:
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         start = perf_counter()
+        if settings.is_serverless:
+            return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama is local-development only in managed cloud")
         if not self.configured():
             return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama API is not reachable")
 

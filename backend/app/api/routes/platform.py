@@ -74,6 +74,8 @@ def rhd_tools() -> dict[str, object]:
 
 @router.post("/tools/execute")
 def rhd_tool_execute(request: ToolExecutionRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if settings.public_analysis_mode and not request.approved:
+        raise HTTPException(status_code=403, detail="Public deployment does not allow anonymous tool execution")
     try:
         return execute_tool(db, request.tool, request.payload, approved=request.approved)
     except ValueError as exc:
@@ -89,6 +91,8 @@ def rag_query(request: RagQueryRequest, db: Session = Depends(get_db)) -> dict[s
 
 @router.post("/code/analyze")
 def code_analyze(request: CodeAnalyzeRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if settings.is_serverless:
+        raise HTTPException(status_code=403, detail="Local filesystem code scanning is disabled in serverless cloud mode")
     if not db.get(Repository, request.repository_id):
         raise HTTPException(status_code=404, detail="Repository not found")
     path = Path(request.local_path).resolve()

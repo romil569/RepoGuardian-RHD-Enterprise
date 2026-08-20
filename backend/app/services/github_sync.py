@@ -7,6 +7,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.models import Comment, Issue, PullRequest, Release, Repository
 from app.github.client import GitHubCliService, GitHubRestService, github_service
 from app.services.indexing import index_repository
@@ -144,20 +145,30 @@ def sync_repository(db: Session, repository_id: int, github: GitHubCliService | 
         "releases_added": 0,
         "releases_updated": 0,
     }
-    for item in github.get_repository_issues(repo.full_name):
+    issue_limit = settings.max_public_issues if settings.public_analysis_mode else 100
+    pr_limit = settings.max_public_prs if settings.public_analysis_mode else 100
+    release_limit = settings.max_public_releases if settings.public_analysis_mode else 30
+    for item in github.get_repository_issues(repo.full_name, limit=issue_limit):
         issue, status = _upsert_issue(db, repo.id, item)
         db.flush()
         counts[f"issues_{status}"] += 1
         for comment in github.get_issue_comments(repo.full_name, issue.github_issue_number):
             comment_status = _upsert_comment(db, repo.id, issue.id, comment)
             counts[f"comments_{comment_status}"] += 1
-    for item in github.get_pull_requests(repo.full_name):
+    for item in github.get_pull_requests(repo.full_name, limit=pr_limit):
         _, status = _upsert_pr(db, repo.id, item)
         counts[f"pull_requests_{status}"] += 1
-    for item in github.get_releases(repo.full_name):
+    for item in github.get_releases(repo.full_name, limit=release_limit):
         _, status = _upsert_release(db, repo.id, item)
         counts[f"releases_{status}"] += 1
     repo.last_synced_at = datetime.now(UTC)
     db.commit()
     documents_indexed = index_repository(db, repo.id)
-    return {**counts, "documents_indexed": documents_indexed, "duration": round(perf_counter() - start, 3)}
+    bounded = settings.public_analysis_mode and any(
+        [
+            counts["issues_added"] + counts["issues_updated"] >= issue_limit,
+            counts["pull_requests_added"] + counts["pull_requests_updated"] >= pr_limit,
+            counts["releases_added"] + counts["releases_updated"] >= release_limit,
+        ]
+    )
+    return {**counts, "documents_indexed": documents_indexed, "duration": round(perf_counter() - start, 3), "bounded_initial_review": bounded}

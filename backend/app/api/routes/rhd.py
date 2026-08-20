@@ -4,9 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.github.client import GitHubAuthenticationError, GitHubNotFoundError, GitHubServiceError
 from app.services.audit import log_audit_event
+from app.services.serverless_jobs import create_rhd_onboarding_job
+from app.services.sessions import ensure_public_session, record_message, session_context
 from app.services.rhd import answer_question, full_repository_review, initial_scan, onboard_repository, parse_repository_input, route_intent
 
 router = APIRouter(prefix="/api/rhd", tags=["rhd"])
@@ -21,6 +24,7 @@ class RHDQueryRequest(BaseModel):
     repository_id: int
     question: str
     session_context: dict[str, object] | None = None
+    session_id: str | None = None
 
 
 def handle_error(exc: Exception) -> HTTPException:
@@ -47,7 +51,7 @@ def parse_repository(request: RepositoryInputRequest) -> dict[str, object]:
 @router.post("/onboard")
 def onboard(request: RepositoryInputRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
-        result = onboard_repository(db, request.repository, request.run_sync)
+        result = create_rhd_onboarding_job(db, request.repository, request.run_sync) if settings.is_serverless else onboard_repository(db, request.repository, request.run_sync)
     except Exception as exc:
         raise handle_error(exc) from exc
     repo = result["repository"]
@@ -81,7 +85,12 @@ def get_review(repository_id: int, db: Session = Depends(get_db)) -> dict[str, o
 @router.post("/query")
 def query(request: RHDQueryRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
-        result = answer_question(db, request.repository_id, request.question, request.session_context)
+        session = ensure_public_session(db, request.repository_id, request.session_id or str((request.session_context or {}).get("session_id") or ""))
+        context = session_context(session, request.session_context)
+        record_message(db, session.id, request.repository_id, "user", request.question)
+        result = answer_question(db, request.repository_id, request.question, context)
+        record_message(db, session.id, request.repository_id, "assistant", result["answer"], {"intent": result["intent"], "confidence": result["confidence"]})
+        result["context"] = session_context(session, result.get("context"))
     except Exception as exc:
         raise handle_error(exc) from exc
     log_audit_event(

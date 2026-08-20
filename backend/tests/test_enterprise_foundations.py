@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 from sqlalchemy import create_engine
 
 from app.core.config import settings
-from app.db.models import IndexedDocument, Issue, PullRequest, Release, Repository
+from app.db.models import ConversationMessage, IndexedDocument, Issue, PullRequest, PublicSession, Release, Repository
 from app.platform.deployment import database_runtime_checks, deployment_profile, queue_runtime_check
-from app.platform.queue import LocalJobQueue, create_job_queue
+from app.platform.queue import JobStatus, JobType, LocalJobQueue, PostgresJobQueue, create_job_queue
+from app.services.rate_limit import check_rate_limit
+from app.services.sessions import ensure_public_session, record_message
 from app.platform.tool_registry import execute_tool, list_tools
 from app.rag.agentic import evaluate_retrieval, plan_query, retrieve_agentic_evidence
 
@@ -22,7 +24,8 @@ def _repo(db_session) -> Repository:
 def test_deployment_profile_lists_managed_cloud_mode():
     profile = deployment_profile()
     assert "MANAGED_CLOUD" in profile["supported_modes"]
-    assert profile["managed_cloud"]["backend"] == "Render-compatible FastAPI service"
+    assert profile["managed_cloud"]["backend"] == "Vercel Python serverless FastAPI"
+    assert profile["managed_cloud"]["queue"] == "Postgres serverless job queue, local development fallback"
 
 
 def test_database_runtime_checks_report_sqlite_as_not_configured(monkeypatch):
@@ -97,3 +100,37 @@ def test_tool_registry_lists_safety_and_gates_write_tools(db_session):
 
     response = execute_tool(db_session, "rhd_prepare_action", {"repository_id": 1, "action_type": "POST_COMMENT"})
     assert response["status"] == "APPROVAL_REQUIRED"
+
+
+def test_public_session_persists_repository_scoped_messages(db_session):
+    repo = _repo(db_session)
+    session = ensure_public_session(db_session, repo.id)
+    record_message(db_session, session.id, repo.id, "user", "What should I fix first?")
+    db_session.commit()
+
+    assert db_session.get(PublicSession, session.id).repository_id == repo.id
+    assert db_session.query(ConversationMessage).filter_by(session_id=session.id, repository_id=repo.id).count() == 1
+    assert ensure_public_session(db_session, repo.id, session.id).id == session.id
+
+
+def test_rate_limit_uses_local_fallback_when_postgres_disabled(monkeypatch):
+    monkeypatch.setattr(settings, "queue_backend", "local")
+    monkeypatch.setattr(settings, "rate_limit_window_seconds", 60)
+    assert check_rate_limit("test-client:expensive", "expensive", 1) is True
+    assert check_rate_limit("test-client:expensive", "expensive", 1) is False
+
+
+def test_postgres_job_queue_class_round_trips_with_monkeypatched_session(db_session, monkeypatch):
+    import app.platform.queue as queue_module
+
+    class SessionFactory:
+        def __call__(self):
+            return db_session
+
+    monkeypatch.setattr(queue_module, "SessionLocal", SessionFactory())
+    queue = PostgresJobQueue()
+    job = queue.enqueue(JobType.INITIAL_RHD_REVIEW, 1, {"stage": "CONNECT"}, correlation_id="job-1")
+    duplicate = queue.enqueue(JobType.INITIAL_RHD_REVIEW, 1, {"stage": "CONNECT"}, correlation_id="job-1")
+
+    assert duplicate.id == job.id
+    assert queue.get(job.id).status == JobStatus.QUEUED

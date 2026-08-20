@@ -41,7 +41,7 @@ Deployment modes:
 
 - `LIGHTWEIGHT_LOCAL`: SQLite, local vectors, deterministic/RHD tools.
 - `INDUSTRY_LOCAL`: optional Docker PostgreSQL/Redis when Docker exists.
-- `MANAGED_CLOUD`: Vercel frontend, Python FastAPI service, managed PostgreSQL/pgvector, Redis or Postgres queue fallback.
+- `MANAGED_CLOUD`: Vercel frontend, Vercel Python FastAPI backend, Neon PostgreSQL/pgvector, Postgres queue.
 - `ENTERPRISE_AWS`: Terraform foundation; not provisioned.
 
 ## Feature Matrix
@@ -63,8 +63,8 @@ Deployment modes:
 | Audit | Working | Safe summaries, no secrets |
 | Model Gateway | Working | Ollama local adapter, cloud config probes, deterministic fallback |
 | ML Registry | Working | Honest model cards; training requires defensible dataset |
-| Managed PostgreSQL | Ready for credentials | Provider-neutral `DATABASE_URL`, pgvector health checks |
-| Redis Queue | Optional provider | `REDIS_URL`; Postgres/local fallbacks remain available |
+| Managed PostgreSQL | Neon validated | Provider-neutral `DATABASE_URL`, pgvector health checks |
+| Serverless Queue | Implemented | Postgres job queue for Vercel; local fallback remains available |
 
 ## Quick Start
 
@@ -91,20 +91,19 @@ Docker PostgreSQL/Redis are used only when Docker is installed. Otherwise the st
 
 ### Managed Cloud
 
-Backend command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
+Backend Vercel entrypoint: `api/index.py`.
 
 Required backend environment:
 
 - `DEPLOYMENT_MODE=MANAGED_CLOUD`
 - `DATABASE_URL=postgresql://...`
 - `POSTGRES_RUNTIME_MODE=managed`
+- `QUEUE_BACKEND=postgres`
+- `PUBLIC_ANALYSIS_MODE=true`
+- `GITHUB_WRITE_MODE=disabled`
 - `FRONTEND_URL=https://...`
 - `CORS_ORIGINS=https://...`
-- optional `REDIS_URL` with `QUEUE_BACKEND=redis`
+- `ENABLE_STARTUP_SCHEMA_CREATE=false`
 
 Frontend environment:
 
@@ -112,7 +111,7 @@ Frontend environment:
 NEXT_PUBLIC_API_URL=https://your-fastapi-service.example.com
 ```
 
-See [docs/deployment-managed-cloud.md](docs/deployment-managed-cloud.md) and [docs/deploy-render.md](docs/deploy-render.md).
+See [docs/deployment-managed-cloud.md](docs/deployment-managed-cloud.md) and [docs/vercel-backend-audit.md](docs/vercel-backend-audit.md).
 
 ## MCP
 
