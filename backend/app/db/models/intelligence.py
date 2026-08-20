@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -12,7 +12,7 @@ class Issue(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
-    github_id: Mapped[int] = mapped_column(Integer, index=True)
+    github_id: Mapped[int] = mapped_column(BigInteger, index=True)
     github_issue_number: Mapped[int] = mapped_column(Integer, index=True)
     title: Mapped[str] = mapped_column(String(1024))
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -37,7 +37,7 @@ class PullRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
-    github_id: Mapped[int] = mapped_column(Integer, index=True)
+    github_id: Mapped[int] = mapped_column(BigInteger, index=True)
     github_pr_number: Mapped[int] = mapped_column(Integer, index=True)
     title: Mapped[str] = mapped_column(String(1024))
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -60,7 +60,7 @@ class Comment(Base):
     repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
     issue_id: Mapped[int | None] = mapped_column(ForeignKey("issues.id"), nullable=True, index=True)
     pull_request_id: Mapped[int | None] = mapped_column(ForeignKey("pull_requests.id"), nullable=True, index=True)
-    github_id: Mapped[int] = mapped_column(Integer, index=True)
+    github_id: Mapped[int] = mapped_column(BigInteger, index=True)
     author: Mapped[str | None] = mapped_column(String(255), nullable=True)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
     html_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
@@ -74,7 +74,7 @@ class Release(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
-    github_id: Mapped[int] = mapped_column(Integer, index=True)
+    github_id: Mapped[int] = mapped_column(BigInteger, index=True)
     tag: Mapped[str] = mapped_column(String(255), index=True)
     name: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)

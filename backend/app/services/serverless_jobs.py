@@ -131,9 +131,15 @@ def advance_rhd_job(db: Session, job_id: str) -> dict[str, Any]:
         else:
             job.status = "QUEUED"
     except Exception as exc:
+        attempts = job.attempts
+        max_attempts = job.max_attempts
+        db.rollback()
+        job = db.get(DeploymentJob, job_id)
+        if not job:
+            raise
         job.error = str(exc)
         job.lease_until = None
-        if job.attempts >= job.max_attempts:
+        if attempts >= max_attempts:
             job.status = "FAILED"
             job.completed_at = datetime.now(UTC)
         else:

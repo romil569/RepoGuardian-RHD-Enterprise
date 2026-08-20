@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,7 +11,7 @@ class Repository(Base):
     __tablename__ = "repositories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    github_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    github_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     owner: Mapped[str] = mapped_column(String(255), index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     full_name: Mapped[str] = mapped_column(String(511), unique=True, index=True)
