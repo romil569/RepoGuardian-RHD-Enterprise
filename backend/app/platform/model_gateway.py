@@ -1,0 +1,151 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from time import perf_counter
+from typing import Protocol
+
+from app.core.config import settings
+
+
+@dataclass
+class ModelRequest:
+    task: str
+    prompt: str
+    repository_visibility: str = "public"
+    require_json: bool = False
+
+
+@dataclass
+class ModelResponse:
+    provider: str
+    model: str
+    task: str
+    status: str
+    content: str
+    latency_ms: int
+    error: str | None = None
+    tokens: int | None = None
+
+
+class ModelProvider(Protocol):
+    name: str
+    model: str
+
+    def configured(self) -> bool:
+        ...
+
+    def generate(self, request: ModelRequest) -> ModelResponse:
+        ...
+
+
+@dataclass
+class ProviderCircuit:
+    failures: int = 0
+    successes: int = 0
+    opened_until: datetime | None = None
+
+    def allow(self) -> bool:
+        return self.opened_until is None or datetime.now(UTC) >= self.opened_until
+
+    def record_success(self) -> None:
+        self.successes += 1
+        self.failures = 0
+        self.opened_until = None
+
+    def record_failure(self) -> None:
+        self.failures += 1
+        if self.failures >= 3:
+            self.opened_until = datetime.now(UTC) + timedelta(minutes=5)
+
+
+class DeterministicProvider:
+    name = "deterministic"
+    model = "template-router"
+
+    def configured(self) -> bool:
+        return True
+
+    def generate(self, request: ModelRequest) -> ModelResponse:
+        start = perf_counter()
+        return ModelResponse(
+            provider=self.name,
+            model=self.model,
+            task=request.task,
+            status="OK",
+            content=f"Deterministic fallback handled {request.task}. Use repository tools for factual evidence.",
+            latency_ms=int((perf_counter() - start) * 1000),
+        )
+
+
+@dataclass
+class ConfigOnlyProvider:
+    name: str
+    model: str
+    api_key: str | None = None
+    local_endpoint: str | None = None
+
+    def configured(self) -> bool:
+        return bool(self.api_key or self.local_endpoint)
+
+    def generate(self, request: ModelRequest) -> ModelResponse:
+        start = perf_counter()
+        if not self.configured():
+            return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Provider is not configured")
+        return ModelResponse(self.name, self.model, request.task, "NOT_IMPLEMENTED", "", int((perf_counter() - start) * 1000), error="Network provider adapter is configured but not executed in this environment")
+
+
+@dataclass
+class ModelGateway:
+    providers: dict[str, ModelProvider]
+    priority: list[str]
+    circuits: dict[str, ProviderCircuit] = field(default_factory=dict)
+    telemetry: list[ModelResponse] = field(default_factory=list)
+
+    @classmethod
+    def from_settings(cls) -> "ModelGateway":
+        providers: dict[str, ModelProvider] = {
+            "ollama": ConfigOnlyProvider("ollama", settings.ollama_model, local_endpoint=settings.ollama_base_url),
+            "groq": ConfigOnlyProvider("groq", settings.groq_model, api_key=settings.groq_api_key),
+            "openrouter": ConfigOnlyProvider("openrouter", settings.openrouter_model, api_key=settings.openrouter_api_key),
+            "openai": ConfigOnlyProvider("openai", settings.openai_model, api_key=settings.openai_api_key),
+            "deterministic": DeterministicProvider(),
+        }
+        priority = [item.strip() for item in settings.ai_provider_priority.split(",") if item.strip()]
+        return cls(providers=providers, priority=priority)
+
+    def generate(self, request: ModelRequest) -> ModelResponse:
+        for provider_name in self.priority:
+            provider = self.providers.get(provider_name)
+            if not provider:
+                continue
+            if request.repository_visibility == "private" and provider_name not in {"ollama", "deterministic"} and not settings.allow_external_model_for_private_repos:
+                continue
+            circuit = self.circuits.setdefault(provider_name, ProviderCircuit())
+            if not circuit.allow():
+                continue
+            response = provider.generate(request)
+            self.telemetry.append(response)
+            if response.status == "OK":
+                circuit.record_success()
+                return response
+            circuit.record_failure()
+        fallback = self.providers["deterministic"].generate(request)
+        self.telemetry.append(fallback)
+        return fallback
+
+    def status(self) -> list[dict[str, object]]:
+        rows = []
+        for name, provider in self.providers.items():
+            circuit = self.circuits.setdefault(name, ProviderCircuit())
+            rows.append(
+                {
+                    "provider": name,
+                    "model": provider.model,
+                    "configured": provider.configured(),
+                    "circuit_open": not circuit.allow(),
+                    "successes": circuit.successes,
+                    "failures": circuit.failures,
+                }
+            )
+        return rows
