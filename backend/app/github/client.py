@@ -40,7 +40,7 @@ class GitHubCliService:
     def _run(self, args: list[str], timeout: int = 30) -> Any:
         command = [self._gh(), *args]
         try:
-            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=False)
+            result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout, check=False)
         except subprocess.TimeoutExpired as exc:
             raise GitHubServiceError("GitHub request timed out") from exc
         if result.returncode != 0:

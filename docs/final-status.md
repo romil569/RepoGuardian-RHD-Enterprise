@@ -4,6 +4,8 @@
 |---|---|---|---|
 | Frontend | WORKING | `npm run lint`, `npm run typecheck`, `npm run build`, route checks | All judge-demo routes return 200 |
 | Backend | WORKING | `pytest`, `/health`, live API matrix | FastAPI running on port 8000 |
+| RHD Repository Health Director | WORKING | RHD service tests, API checks, browser QA | URL onboarding, full review, console, controlled intents, source-grounded trace |
+| Public Repository Read-Only Analysis | WORKING | RHD tests and policy validation | Non-demo repositories can be analyzed but writes remain blocked |
 | GitHub Authentication | WORKING | `gh auth status` | Authenticated as `romil569` |
 | Demo Repository | WORKING | `gh repo view romil569/RepoGuardian-Demo` | Public repo, admin permission |
 | Repository Sync | WORKING | Live sync API | 21 documents indexed in final run |

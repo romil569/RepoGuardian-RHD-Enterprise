@@ -1,6 +1,6 @@
 # RepoGuardian Agent Notes
 
-RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation. Prompt 3 extends that pipeline with advanced duplicate detection, context-aware completeness, priority scoring, security signals, release-regression analysis, related PR intelligence, repository health, weekly brief, human feedback, evaluation metrics, and telemetry. Prompt 4 adds a human-in-the-loop maintainer workflow with safe action recommendations, review queue, approval/rejection, policy validation, GitHub action execution guards, and audit logging.
+RepoGuardian is an agentic open-source maintainer assistant powered by RHD — Repository Health Director. RepoGuardian is the platform; RHD is the repository intelligence agent. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation. Prompt 3 extends that pipeline with advanced duplicate detection, context-aware completeness, priority scoring, security signals, release-regression analysis, related PR intelligence, repository health, weekly brief, human feedback, evaluation metrics, and telemetry. Prompt 4 adds a human-in-the-loop maintainer workflow with safe action recommendations, review queue, approval/rejection, policy validation, GitHub action execution guards, and audit logging. The RHD upgrade adds repository URL onboarding, full repository review, deterministic intent routing, an Ask RHD console, issue clusters, top actions, workload intelligence, and public read-only repository analysis.
 
 ## Architecture
 
@@ -19,6 +19,8 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - `backend/app/services/audit.py`: append-oriented safe audit events.
 - `backend/app/api/routes/action_recommendations.py`: review queue and action workflow endpoints.
 - `backend/app/api/routes/audit_log.py`: audit log API.
+- `backend/app/services/rhd.py`: RHD repository review, deterministic intent routing, tool orchestration, top actions, clustering, workload, and source-grounded answers.
+- `backend/app/api/routes/rhd.py`: RHD onboarding, full review, initial scan, and query endpoints.
 - `backend/app/services/evidence.py`: strict evidence source validation.
 - `frontend/`: Next.js, TypeScript, Tailwind CSS, repository sync/search UI, investigation UI, health dashboards, feedback controls, and non-secret settings panels.
 - `infrastructure/`: database initialization and future deployment assets.
@@ -36,6 +38,9 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Database: `docker compose up -d postgres`
 - Migrations: `cd backend && .\.venv\Scripts\python -m alembic upgrade head`
 - Connect demo repository: `POST /api/repositories/connect` with `{"repository":"romil569/RepoGuardian-Demo"}`
+- RHD onboard repository: `POST /api/rhd/onboard` with `{"repository":"https://github.com/owner/repository"}`
+- RHD full review: `GET /api/rhd/repositories/{id}/review`
+- Ask RHD: `POST /api/rhd/query`
 - Sync repository: `POST /api/repositories/{id}/sync`
 - Search repository history: `POST /api/repositories/{id}/search`
 - Investigate issue: `POST /api/issues/{id}/investigate`
@@ -57,6 +62,7 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 ## Safety Rules
 
 - Only the repository configured by `DEMO_GITHUB_REPOSITORY` may be modified by automated development/test actions.
+- Public repositories outside the write allow-list may be connected and synchronized for read-only analysis.
 - The demo repository is expected to be `<authenticated-user>/RepoGuardian-Demo`.
 - Never modify issues, labels, branches, pull requests, or releases in non-demo repositories unless the user explicitly requests it.
 - Never fabricate GitHub evidence, commits, labels, issue contents, or release history in reports.
@@ -66,4 +72,5 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Live AI provider calls require `OPENAI_API_KEY`; without it, deterministic tools must return `AI provider not configured` behavior rather than fabricating AI output.
 - Policy settings exposed to the frontend must stay non-secret.
 - External GitHub writes must go through `ActionRecommendation` approval and server-side policy validation.
+- RHD answers must be grounded in repository-scoped tools and synchronized evidence. Do not fabricate repository intelligence.
 - Prompt 4 uses `local-maintainer` as a hackathon reviewer identity only; do not describe it as production RBAC.

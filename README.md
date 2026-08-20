@@ -1,6 +1,6 @@
 # RepoGuardian
 
-RepoGuardian is an industry-oriented hackathon project for open-source maintainers. It connects to a real GitHub repository, synchronizes issues/PRs/releases, builds a repository-scoped knowledge index, investigates issues with deterministic agentic tools, and turns recommendations into a human-approved maintainer workflow.
+RepoGuardian is an industry-oriented hackathon project for open-source maintainers, powered by RHD — Repository Health Director. RepoGuardian is the platform; RHD is the intelligence agent that connects to a GitHub repository, synchronizes issues/PRs/releases, builds a repository-scoped knowledge index, investigates repository health, and turns recommendations into a human-approved maintainer workflow.
 
 ## Problem
 
@@ -8,11 +8,16 @@ Maintainers often triage issues with incomplete reports, duplicates, unclear pri
 
 ## Solution
 
-RepoGuardian uses project-aware retrieval, structured investigation tools, evidence validation, and a human-in-the-loop review queue. The system recommends; a maintainer controls external GitHub actions.
+RepoGuardian uses RHD, project-aware retrieval, structured investigation tools, evidence validation, and a human-in-the-loop review queue. RHD investigates. RHD recommends. Humans authorize external action.
+
+Paste Repository -> RHD Syncs -> RHD Builds Context -> RHD Investigates -> RHD Validates Evidence -> RHD Prioritizes -> RHD Recommends -> Human Approves
 
 ## Key Features
 
 - GitHub repository connection and idempotent sync
+- RHD repository URL onboarding for `owner/repository` and `https://github.com/owner/repository`
+- RHD full repository review, executive assessment, daily maintainer priorities, and Ask RHD console
+- Public repository read-only analysis with write operations still restricted to the configured demo repository
 - Repository-scoped RAG over issues, PRs, comments, and releases
 - Multi-step investigation pipeline with operational trace
 - Duplicate detection, completeness analysis, security signals, release-regression analysis, related PR intelligence, priority, and escalation
@@ -38,7 +43,7 @@ GitHub -> Sync / Monitoring -> Database -> Repository Knowledge Index -> Project
 
 ## Pages
 
-- Overview: health, real issue counts, pending actions, recent audit events, system status
+- Command Center: RHD hero, repository input, Ask RHD, executive assessment, priorities, intelligence map, system status
 - Repositories: connect, sync, and search repository history
 - Issues / Investigations: run investigations, inspect evidence, confidence, telemetry, recommendations, feedback
 - Review Queue: preview, approve, reject, and execute policy-validated recommendations
@@ -147,20 +152,21 @@ Doctor script:
 
 Use `docs/demo-runbook.md` and `docs/demo-script.md`. The demo is deterministic and does not require Docker, pgvector, or OpenAI credentials.
 
-Core demo path:
+Core RHD demo path:
 
-1. Overview dashboard
-2. Repository sync/search
-3. Incomplete issue investigation
-4. Duplicate/regression investigation with verified evidence
-5. Security-sensitive issue with urgent review
-6. Review Queue action preview and approval safeguard
-7. Audit Log
-8. Repository Health and Weekly Brief
+1. Paste a repository into RHD
+2. Show RHD initial scan and full repository review
+3. Ask RHD: "What should I fix first?"
+4. Show evidence-backed duplicate/security/release findings
+5. Show Today's Maintainer Priorities
+6. Open Investigations for issue-level evidence
+7. Show Review Queue action preview and approval safeguard
+8. Show Audit Log
 
 ## Safety
 
 - Repository writes are allow-listed to the configured demo repository.
+- Arbitrary public repositories are analyzed in read-only mode.
 - External GitHub writes require explicit approval and server-side policy validation.
 - Evidence must correspond to synchronized repository records.
 - Security-sensitive issues avoid public exploit or secret requests.

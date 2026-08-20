@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.db.models import Issue, PullRequest, Release, Repository
 from app.db.session import get_db
 from app.github.client import GitHubAuthenticationError, GitHubNotFoundError, GitHubServiceError
 from app.rag.retriever import search_repository_history
 from app.services.audit import log_audit_event
 from app.services.github_sync import connect_repository, sync_repository
+from app.services.rhd import repository_access_mode
 
 router = APIRouter(prefix="/api/repositories", tags=["repositories"])
 
@@ -39,6 +39,7 @@ def repo_dict(repo: Repository) -> dict[str, object]:
         "created_at": repo.created_at,
         "updated_at": repo.updated_at,
         "last_synced_at": repo.last_synced_at,
+        "access_mode": repository_access_mode(repo),
     }
 
 
@@ -108,8 +109,6 @@ def connect(request: ConnectRepositoryRequest, db: Session = Depends(get_db)) ->
     full_name = request.repository.strip()
     if "/" not in full_name:
         raise HTTPException(status_code=422, detail="Repository must be in owner/name format")
-    if settings.demo_github_repository and full_name != settings.demo_github_repository:
-        raise HTTPException(status_code=403, detail="Only the configured demo repository may be connected in this environment")
     try:
         repo, created = connect_repository(db, full_name)
     except Exception as exc:
@@ -123,7 +122,7 @@ def connect(request: ConnectRepositoryRequest, db: Session = Depends(get_db)) ->
     )
     db.commit()
     db.refresh(repo)
-    return {"status": "connected", "created": created, "repository": repo_dict(repo)}
+    return {"status": "connected", "created": created, "repository": repo_dict(repo), "access_mode": repository_access_mode(repo)}
 
 
 @router.get("")

@@ -44,7 +44,7 @@ export function Sidebar() {
         </div>
         <div>
           <div className="text-base font-semibold text-ink">RepoGuardian</div>
-          <div className="text-xs text-slate-500">AI Repository Intelligence</div>
+          <div className="text-xs text-slate-500">powered by RHD</div>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export function Sidebar() {
       <div className="mt-4 rounded-md border border-line bg-panel p-3 text-xs text-slate-600">
         <div className="flex items-center gap-2 font-semibold text-ink">
           <Command size={14} aria-hidden={true} />
-          Ctrl K command layer
+          RHD command layer
         </div>
         <p className="mt-1 leading-5">Navigate and search verified repository context from any screen.</p>
       </div>

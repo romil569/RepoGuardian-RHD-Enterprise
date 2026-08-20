@@ -24,6 +24,8 @@ Selective Escalation
 ↓
 Evidence Validation
 ↓
+RHD Repository Review / Ask RHD
+↓
 Action Recommendation
 ↓
 Human Review
@@ -52,6 +54,10 @@ Prompt 3 intelligence is deterministic by default. `AI_PROVIDER_MODE=auto` repor
 
 Prompt 4 adds human review. Investigations create `ActionRecommendation` rows but do not execute external writes. Maintainers review previews, approve or reject, and execution validates policy again server-side. Supported actions are intentionally limited to safe label/comment/review workflows. The system does not close issues, merge PRs, delete branches, delete issues, or disclose security details.
 
+RHD — Repository Health Director — is the agent layer on top of the existing tools. RHD accepts a GitHub repository URL or `owner/repository`, connects and syncs the repository, builds repository context, runs a bounded initial scan, generates a full repository review, and answers repository-oriented questions through controlled intents. RHD uses deterministic routing when `OPENAI_API_KEY` is not configured. Live language model support remains optional and must stay grounded in tool outputs.
+
+Public repositories outside `ALLOWED_WRITE_REPOSITORY` are read-only analysis targets. External writes remain restricted by the existing action recommendation, human approval, allow-list, and policy validation path.
+
 Audit logging is append-oriented and stores safe summaries plus metadata for repository, issue, investigation, action recommendation, actor, event type, and timestamp. It does not store secrets or private reasoning.
 
 ## Enterprise Evolution
@@ -70,5 +76,7 @@ Future production architecture can add:
 - Evaluation pipelines and drift monitoring
 - Enterprise policy engine
 - Enterprise audit retention
+- Repository comparison using two isolated RHD reviews
+- Private repository onboarding through GitHub App installation and fine-grained permissions
 
 These items are roadmap items, not implemented capabilities.

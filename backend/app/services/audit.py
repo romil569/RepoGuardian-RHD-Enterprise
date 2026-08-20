@@ -20,6 +20,8 @@ ALLOWED_AUDIT_EVENTS = {
     "POLICY_BLOCKED_ACTION",
     "FEEDBACK_SUBMITTED",
     "SETTINGS_CHANGED",
+    "RHD_REPOSITORY_ONBOARDED",
+    "RHD_QUERY_ANSWERED",
 }
 
 SENSITIVE_WORDS = {"token", "secret", "password", "api_key", "authorization", "cookie"}

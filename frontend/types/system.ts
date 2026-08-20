@@ -20,6 +20,8 @@ export type Repository = {
   language?: string | null;
   stars: number;
   last_synced_at?: string | null;
+  access_mode?: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC";
+  indexed_documents?: number;
 };
 
 export type Issue = {
@@ -230,4 +232,105 @@ export type IssueHistory = {
     comment?: string | null;
     created_at: string;
   }>;
+};
+
+export type RHDTraceStep = {
+  step: string;
+  status: string;
+  summary: string;
+};
+
+export type RHDEvidence = {
+  source_type?: string;
+  type?: string;
+  github_number?: number | null;
+  number?: number;
+  label?: string;
+  title: string;
+  source_url?: string | null;
+  url?: string | null;
+};
+
+export type RHDAction = {
+  priority: string;
+  reason: string;
+  evidence: RHDEvidence[];
+  affected: { type: string; number: number; id: number; title: string; url: string };
+  recommended_human_action: string;
+};
+
+export type RHDInitialScan = {
+  status: string;
+  steps: Array<{ name: string; status: string; summary: string | Record<string, number> }>;
+};
+
+export type RHDReview = {
+  repository: Repository & { access_mode: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC"; indexed_documents?: number };
+  generated_at: string;
+  executive_assessment: {
+    state: string;
+    health_score: number;
+    main_signals: string[];
+    top_risks: string[];
+    recommended_maintainer_focus: string;
+  };
+  health: RepositoryHealth;
+  issue_backlog: {
+    total: number;
+    open: number;
+    clusters: Array<{
+      name: string;
+      issue_count: number;
+      risk: string;
+      priority_distribution: Record<string, number>;
+      duplicate_concentration: number;
+      representative_issues: Array<{ number: number; title: string; url: string }>;
+    }>;
+  };
+  pr_activity: { total: number; open: number };
+  release_stability: { releases: number; release_related_issues: RHDAction[] };
+  duplicate_burden: {
+    count: number;
+    clusters: Array<{
+      name: string;
+      similarity: string;
+      top_score: number;
+      members: Array<{ number: number; title: string; url: string; score?: number }>;
+      recommended: string;
+    }>;
+  };
+  incomplete_reports: Array<{ number: number; title: string; url: string; score: number; missing: string[] }>;
+  security_signals: Array<{ number: number; title: string; url: string; signal: { security_state: string; confidence: number; signals: string[]; recommended_handling: string } }>;
+  high_priority_issues: Array<{ number: number; title: string; url: string; priority: string }>;
+  maintainer_workload: { load: string; score: number; rules: string; signals: Record<string, number> };
+  top_risks: string[];
+  top_opportunities: string[];
+  recommended_action_plan: RHDAction[];
+  evidence: RHDEvidence[];
+  automation_level: { analyze: string; recommend: string; external_action: string };
+  confidence: string;
+};
+
+export type RHDQueryResponse = {
+  question: string;
+  intent: string;
+  answer: string;
+  key_findings: string[];
+  evidence: RHDEvidence[];
+  recommended_actions: string[];
+  confidence: string;
+  sources: RHDEvidence[];
+  trace: RHDTraceStep[];
+  context: Record<string, unknown>;
+};
+
+export type RHDOnboardingResponse = {
+  status: string;
+  created: boolean;
+  repository: Repository & { access_mode: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC"; indexed_documents?: number };
+  access_mode: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC";
+  sync_result?: Record<string, number | string> | null;
+  rhd_status: string;
+  initial_scan: RHDInitialScan;
+  review: RHDReview;
 };

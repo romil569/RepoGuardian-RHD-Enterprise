@@ -12,6 +12,10 @@ import type {
   Release,
   Repository,
   RepositoryHealth,
+  RHDInitialScan,
+  RHDOnboardingResponse,
+  RHDQueryResponse,
+  RHDReview,
   SearchResult,
   SystemStatus,
   WeeklyBrief
@@ -126,4 +130,20 @@ export function fetchAuditLog(params?: { repository_id?: number; issue_id?: numb
   if (params?.limit) query.set("limit", String(params.limit));
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return request<AuditLogResponse>(`/api/audit-log${suffix}`);
+}
+
+export function onboardRepositoryWithRHD(repository: string, runSync = true): Promise<RHDOnboardingResponse> {
+  return request<RHDOnboardingResponse>("/api/rhd/onboard", { method: "POST", body: JSON.stringify({ repository, run_sync: runSync }) });
+}
+
+export function fetchRHDInitialScan(repositoryId: number): Promise<RHDInitialScan> {
+  return request<RHDInitialScan>(`/api/rhd/repositories/${repositoryId}/initial-scan`);
+}
+
+export function fetchRHDReview(repositoryId: number): Promise<RHDReview> {
+  return request<RHDReview>(`/api/rhd/repositories/${repositoryId}/review`);
+}
+
+export function askRHD(repositoryId: number, question: string, sessionContext?: Record<string, unknown>): Promise<RHDQueryResponse> {
+  return request<RHDQueryResponse>("/api/rhd/query", { method: "POST", body: JSON.stringify({ repository_id: repositoryId, question, session_context: sessionContext }) });
 }
