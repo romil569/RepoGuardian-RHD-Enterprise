@@ -358,6 +358,42 @@ export type RHDJobStatus = {
   review?: RHDReview;
 };
 
+export type V51AnalysisStart = {
+  analysis_job_id: string;
+  job_id: string;
+  repository_id: number;
+  conversation_id: string;
+  session_id: string;
+  status: string;
+  repository: Repository & { access_mode?: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC"; indexed_documents?: number };
+  access_mode: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC";
+};
+
+export type V51AnalysisJob = {
+  job_id: string;
+  status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  current_stage?: string | null;
+  stage?: string | null;
+  progress: number;
+  message?: string | null;
+  error?: string | null;
+  repository?: Repository & { access_mode?: "WRITE_ENABLED_DEMO" | "READ_ONLY_PUBLIC"; indexed_documents?: number };
+  conversation_id?: string | null;
+  session_id?: string | null;
+  stage_results?: Record<string, unknown>;
+  available_artifacts?: Array<Record<string, unknown>>;
+  architecture?: Record<string, unknown>;
+  initial_scan?: RHDInitialScan;
+  review?: RHDReview;
+  completion_summary?: {
+    health: string;
+    architecture: string;
+    code_analyzed: string;
+    issues_analyzed: number;
+    prs_analyzed: number;
+  };
+};
+
 export type ModelProviderStatus = {
   provider: string;
   model: string;

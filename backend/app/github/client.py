@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -206,6 +207,20 @@ class GitHubCliService:
             ]
         ) or []
 
+    def get_repository_tree(self, full_name: str, branch: str, limit: int = 500) -> list[dict[str, Any]]:
+        rows = self._run(["api", f"repos/{full_name}/git/trees/{branch}?recursive=1", "--jq", ".tree"]) or []
+        return rows[:limit]
+
+    def get_file_text(self, full_name: str, path: str, ref: str) -> str | None:
+        item = self._run(["api", f"repos/{full_name}/contents/{path}?ref={ref}"]) or {}
+        content = str(item.get("content") or "")
+        if item.get("encoding") != "base64" or not content:
+            return None
+        try:
+            return base64.b64decode(content).decode("utf-8", errors="replace")
+        except (ValueError, UnicodeDecodeError):
+            return None
+
 
 @dataclass(frozen=True)
 class GitHubRestService:
@@ -334,6 +349,19 @@ class GitHubRestService:
         if not rows:
             raise GitHubNotFoundError("Pull request not found")
         return rows[0]
+
+    def get_repository_tree(self, full_name: str, branch: str, limit: int = 500) -> list[dict[str, Any]]:
+        item = self._request(f"/repos/{quote(full_name, safe='/')}/git/trees/{quote(branch, safe='')}?recursive=1")
+        return list(item.get("tree") or [])[:limit]
+
+    def get_file_text(self, full_name: str, path: str, ref: str) -> str | None:
+        item = self._request(f"/repos/{quote(full_name, safe='/')}/contents/{quote(path, safe='/')}?ref={quote(ref, safe='')}")
+        if item.get("type") != "file" or item.get("encoding") != "base64":
+            return None
+        try:
+            return base64.b64decode(str(item.get("content") or "")).decode("utf-8", errors="replace")
+        except (ValueError, UnicodeDecodeError):
+            return None
 
     def get_label(self, full_name: str, label: str) -> dict[str, Any]:
         return self._request(f"/repos/{quote(full_name, safe='/')}/labels/{quote(label, safe='')}")

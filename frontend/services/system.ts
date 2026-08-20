@@ -21,6 +21,8 @@ import type {
   RHDOnboardingResponse,
   RHDQueryResponse,
   RHDReview,
+  V51AnalysisJob,
+  V51AnalysisStart,
   SearchResult,
   SystemStatus,
   WeeklyBrief
@@ -211,4 +213,12 @@ export function fetchV5Architecture(repositoryId: number): Promise<Record<string
 
 export function fetchV5Capabilities(): Promise<Record<string, unknown>> {
   return request<Record<string, unknown>>("/api/v5/capabilities");
+}
+
+export function startV51RepositoryAnalysis(body: { repository: string; conversation_id?: string; session_id?: string; requested_depth?: string }): Promise<V51AnalysisStart> {
+  return request<V51AnalysisStart>("/api/v5/repositories/analyze", { method: "POST", body: JSON.stringify(body) });
+}
+
+export function fetchV51AnalysisJob(jobId: string): Promise<V51AnalysisJob> {
+  return request<V51AnalysisJob>(`/api/v5/jobs/${jobId}`);
 }

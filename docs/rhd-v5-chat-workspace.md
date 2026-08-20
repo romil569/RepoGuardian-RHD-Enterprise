@@ -14,10 +14,24 @@ The home route `/` now opens directly into:
 
 Existing dashboards remain available as assistant-accessible tools and pages. The v5 workspace does not remove v4 intelligence.
 
+## v5.1 End-To-End Flow
+
+The public home route supports the complete repository journey:
+
+1. Paste `https://github.com/owner/repository`, `github.com/owner/repository`, or `owner/repository`.
+2. `POST /api/v5/repositories/analyze` creates a persisted `DeploymentJob`.
+3. The frontend polls `GET /api/v5/jobs/{job_id}`; each poll advances one bounded serverless-safe stage.
+4. RHD syncs repository metadata, issues, pull requests, releases, selected source files, code symbols, indexed evidence, review output, and persisted architecture artifacts.
+5. Completion appears inline in chat with an SVG architecture card and populated context tabs.
+6. Reloading the workspace restores the latest persisted repository architecture context.
+7. Follow-up questions use the selected repository/session context; public repositories remain read-only.
+
 ## Backend API
 
 New read-only endpoints:
 
+- `POST /api/v5/repositories/analyze`
+- `GET /api/v5/jobs/{job_id}`
 - `GET /api/v5/workspace`
 - `GET /api/v5/conversations`
 - `GET /api/v5/repositories/{repository_id}/architecture`

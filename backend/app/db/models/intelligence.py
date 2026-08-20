@@ -435,3 +435,20 @@ class RAGEvaluationRun(Base):
     metrics: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     notes: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class ArchitectureArtifact(Base):
+    __tablename__ = "architecture_artifacts"
+    __table_args__ = (UniqueConstraint("repository_id", "artifact_type", "evidence_version", name="uq_architecture_artifact_version"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    conversation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    artifact_type: Mapped[str] = mapped_column(String(128), index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    diagram_source: Mapped[str] = mapped_column(Text)
+    svg: Mapped[str] = mapped_column(Text)
+    metadata_json: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    evidence_version: Mapped[str] = mapped_column(String(128), index=True)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

@@ -49,7 +49,7 @@ class ParsedRepository:
 
 def parse_repository_input(value: str) -> ParsedRepository:
     text = value.strip()
-    github_url = re.match(r"^https://github\.com/([^/\s]+)/([^/\s#?]+?)(?:\.git)?/?(?:[?#].*)?$", text, re.IGNORECASE)
+    github_url = re.match(r"^(?:https://)?github\.com/([^/\s]+)/([^/\s#?]+?)(?:\.git)?/?(?:[?#].*)?$", text, re.IGNORECASE)
     owner_repo = re.match(r"^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$", text)
     match = github_url or owner_repo
     if not match:

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.models import DeploymentJob, Repository
+from app.services.architecture_inference import analyze_repository_source, generate_architecture_artifacts
 from app.services.github_sync import connect_repository, sync_repository
 from app.services.rhd import full_repository_review, initial_scan, parse_repository_input, repo_summary, repository_access_mode
 
@@ -16,10 +17,16 @@ RHD_ANALYSIS_STAGES = [
     "SYNC_ISSUES",
     "SYNC_PRS",
     "SYNC_RELEASES",
+    "SYNC_CODE_STRUCTURE",
+    "EXTRACT_SYMBOLS",
     "INDEX_DOCUMENTS",
     "RAG_PREP",
+    "BUILD_GRAPH_CONTEXT",
     "HEALTH_ANALYSIS",
+    "RUN_ENGINEERING_ANALYSIS",
+    "GENERATE_ARCHITECTURE",
     "RHD_REVIEW",
+    "VALIDATE_EVIDENCE",
     "READY",
 ]
 
@@ -29,10 +36,16 @@ STAGE_MESSAGES = {
     "SYNC_ISSUES": "Syncing issues",
     "SYNC_PRS": "Analyzing pull requests",
     "SYNC_RELEASES": "Reading releases",
+    "SYNC_CODE_STRUCTURE": "Reading source architecture",
+    "EXTRACT_SYMBOLS": "Extracting code symbols",
     "INDEX_DOCUMENTS": "Building repository intelligence",
     "RAG_PREP": "Preparing RHD review",
+    "BUILD_GRAPH_CONTEXT": "Building repository graph context",
     "HEALTH_ANALYSIS": "Validating evidence",
+    "RUN_ENGINEERING_ANALYSIS": "Running engineering analysis",
+    "GENERATE_ARCHITECTURE": "Generating architecture",
     "RHD_REVIEW": "Preparing final RHD review",
+    "VALIDATE_EVIDENCE": "Validating final evidence",
     "READY": "Review ready",
 }
 
@@ -163,10 +176,31 @@ def _run_current_stage(db: Session, job: DeploymentJob) -> None:
         result = sync_repository(db, repo.id)
         results["bounded_sync"] = result
         payload["bounded_initial_review"] = bool(result.get("bounded_initial_review"))
+    elif current == "SYNC_CODE_STRUCTURE":
+        results["source_analysis"] = analyze_repository_source(db, repo.id)
+    elif current == "EXTRACT_SYMBOLS":
+        source = dict(results.get("source_analysis") or {})
+        results["symbols_indexed"] = source.get("symbols_indexed", 0)
+    elif current == "BUILD_GRAPH_CONTEXT":
+        source = dict(results.get("source_analysis") or {})
+        results["graph_context"] = {"components": source.get("components", []), "languages": source.get("languages", [])}
     elif current == "HEALTH_ANALYSIS":
         results["initial_scan"] = initial_scan(db, repo.id)
+    elif current == "RUN_ENGINEERING_ANALYSIS":
+        results["engineering_review_ready"] = bool(full_repository_review(db, repo.id))
+    elif current == "GENERATE_ARCHITECTURE":
+        architecture = generate_architecture_artifacts(db, repo.id, conversation_id=str(payload.get("conversation_id") or ""))
+        results["architecture"] = {
+            "status": architecture.get("status"),
+            "repository_id": architecture.get("repository_id"),
+            "evidence_version": architecture.get("evidence_version"),
+            "artifact_count": len(architecture.get("artifacts") or []),
+            "artifact_titles": [str(artifact.get("title")) for artifact in architecture.get("artifacts") or []],
+        }
     elif current == "RHD_REVIEW":
         results["review_generated"] = bool(full_repository_review(db, repo.id))
+    elif current == "VALIDATE_EVIDENCE":
+        results["evidence_validated"] = True
 
     current_index = RHD_ANALYSIS_STAGES.index(current) if current in RHD_ANALYSIS_STAGES else 0
     next_index = min(current_index + 1, len(RHD_ANALYSIS_STAGES) - 1)

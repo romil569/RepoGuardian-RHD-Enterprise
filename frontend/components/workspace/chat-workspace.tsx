@@ -6,7 +6,6 @@ import {
   ChevronRight,
   CircleStop,
   Download,
-  FileText,
   GitBranch,
   Image,
   Mic,
@@ -15,16 +14,13 @@ import {
   Plus,
   Search,
   Send,
-  Settings,
-  ShieldCheck,
   Sparkles,
-  Volume2,
   Waypoints
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { advanceRHDJob, askRHD, fetchRepositories, fetchRHDJob, fetchV5Architecture, fetchV5Workspace, onboardRepositoryWithRHD } from "@/services/system";
-import type { Repository, RHDJobStatus, RHDQueryResponse, RHDReview } from "@/types/system";
+import { askRHD, fetchRepositories, fetchV5Architecture, fetchV51AnalysisJob, fetchV5Workspace, startV51RepositoryAnalysis } from "@/services/system";
+import type { Repository, RHDQueryResponse, RHDReview, V51AnalysisJob } from "@/types/system";
 
 type ChatMessage = {
   id: string;
@@ -35,7 +31,6 @@ type ChatMessage = {
 };
 
 const examplePrompts = [
-  "Analyze a repository",
   "Review architecture",
   "Find risky code",
   "Explain a PR",
@@ -44,6 +39,9 @@ const examplePrompts = [
   "Show duplicate issues",
   "Review release risk"
 ];
+
+const demoRepositoryUrl = "https://github.com/romil569/RepoGuardian-Demo";
+const selectedRepositoryStorageKey = "repoguardian.v5.selectedRepositoryId";
 
 const toolLinks = [
   ["/mission-control", "Mission Control"],
@@ -54,6 +52,20 @@ const toolLinks = [
   ["/review-queue", "Review Queue"],
   ["/observatory", "Observatory"]
 ];
+
+function restoredArtifactMessages(result: Record<string, unknown>): ChatMessage[] {
+  const artifact = primaryArtifact(arrayOfRecords(result.artifacts));
+  if (!artifact) return [];
+  return [
+    {
+      id: crypto.randomUUID(),
+      role: "rhd",
+      title: "Repository analysis restored",
+      content: `Loaded persisted architecture artifacts for ${repositoryNameFromArchitecture(result)}. Ask a follow-up to continue the review.`
+    },
+    artifactMessage(artifact)
+  ];
+}
 
 export function ChatWorkspace() {
   const [workspace, setWorkspace] = useState<Record<string, unknown>>({});
@@ -75,10 +87,19 @@ export function ChatWorkspace() {
       const [workspaceData, repoData] = await Promise.all([fetchV5Workspace(), fetchRepositories()]);
       setWorkspace(workspaceData);
       setRepositories(repoData);
-      const firstRepo = repoData[0] ?? null;
-      setRepository(firstRepo);
-      if (firstRepo) {
-        fetchV5Architecture(firstRepo.id).then(setArchitecture).catch(() => setArchitecture(null));
+      const storedRepositoryId = Number(window.localStorage.getItem(selectedRepositoryStorageKey) ?? "");
+      const selectedRepo = repoData.find((item) => item.id === storedRepositoryId) ?? repoData[0] ?? null;
+      setRepository(selectedRepo);
+      if (selectedRepo) {
+        fetchV5Architecture(selectedRepo.id)
+          .then((result) => {
+            setArchitecture(result);
+            const restored = restoredArtifactMessages(result);
+            if (restored.length) {
+              setMessages((current) => (current.length ? current : restored));
+            }
+          })
+          .catch(() => setArchitecture(null));
       }
     }
     load().catch(() => setStatus("Ready · context unavailable"));
@@ -89,6 +110,7 @@ export function ChatWorkspace() {
   const usage = recordOf(workspace.usage);
   const capabilities = recordOf(workspace.capabilities);
   const artifacts = arrayOfRecords(architecture?.artifacts);
+  const visibleArtifact = primaryArtifact(artifacts);
 
   async function submit(nextInput = input) {
     const text = nextInput.trim();
@@ -119,48 +141,80 @@ export function ChatWorkspace() {
   }
 
   async function analyzeRepository(repoInput: string) {
-    setStatus("Connecting repository");
-    pushSystem("Connecting repository...");
-    const result = await onboardRepositoryWithRHD(repoInput, true);
-    setRepository(result.repository);
-    setRepositories((current) => [result.repository, ...current.filter((item) => item.id !== result.repository.id)]);
-    pushSystem("Repository validated");
-    if (result.job) {
-      await pollJob(result.job);
-    } else {
-      setReview(result.review ?? null);
-      await loadArchitecture(result.repository.id);
+    setStatus("Starting analysis");
+    pushSystem(`RHD is analyzing ${repoInput}`);
+    const started = await startV51RepositoryAnalysis({
+      repository: repoInput,
+      session_id: String(sessionContext.session_id ?? ""),
+      conversation_id: String(sessionContext.session_id ?? ""),
+      requested_depth: "bounded"
+    });
+    setRepository(started.repository);
+    window.localStorage.setItem(selectedRepositoryStorageKey, String(started.repository.id));
+    setSessionContext((current) => ({ ...current, session_id: started.session_id, repository_id: started.repository_id }));
+    setRepositories((current) => [started.repository, ...current.filter((item) => item.id !== started.repository.id)]);
+    await pollAnalysisJob(started.job_id);
+  }
+
+  async function pollAnalysisJob(jobId: string) {
+    let latest: V51AnalysisJob | null = null;
+    const seenStages = new Set<string>();
+    for (let attempt = 0; attempt < 42; attempt += 1) {
+      latest = await fetchV51AnalysisJob(jobId);
+      const stageLabel = latest.message || latest.current_stage || latest.status;
+      setStatus(`${stageLabel} · ${latest.progress}%`);
+      if (stageLabel && !seenStages.has(stageLabel)) {
+        seenStages.add(stageLabel);
+        pushSystem(`${stageLabel} (${latest.progress}%)`);
+      }
+      if (latest.repository) {
+        setRepository(latest.repository);
+        window.localStorage.setItem(selectedRepositoryStorageKey, String(latest.repository.id));
+      }
+      if (latest.status === "COMPLETED" || latest.status === "FAILED" || latest.status === "CANCELLED") break;
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    }
+    if (!latest) throw new Error("Repository analysis did not start");
+    if (latest.status === "FAILED") throw new Error(latest.error ?? "Repository analysis failed");
+    if (latest.status !== "COMPLETED") throw new Error("Repository analysis did not complete before the polling limit");
+    setReview(latest.review ?? null);
+    setArchitecture(latest.architecture ?? null);
+    if (latest.session_id || latest.repository?.id) {
+      setSessionContext((current) => ({ ...current, session_id: latest.session_id ?? current.session_id, repository_id: latest.repository?.id ?? current.repository_id }));
     }
     setMessages((current) => [
       ...current,
       {
         id: crypto.randomUUID(),
         role: "rhd",
-        title: "Initial repository review complete",
-        content: "I've finished the initial repository review. I can now discuss architecture, risky code, duplicate issues, PR/release risk, evidence, and human-gated action previews from synchronized repository data."
+        title: "Repository analysis complete",
+        content: completionText(latest)
       }
     ]);
-    setStatus("Ready");
-  }
-
-  async function pollJob(initial: RHDJobStatus) {
-    let latest = initial;
-    setStatus(latest.stage_label);
-    for (let attempt = 0; attempt < 16 && latest.status !== "COMPLETED" && latest.status !== "FAILED"; attempt += 1) {
-      latest = await advanceRHDJob(latest.id);
-      pushSystem(`${latest.stage_label} (${latest.progress}%)`);
-      setStatus(latest.stage_label);
-      if (latest.status !== "COMPLETED" && latest.status !== "FAILED") {
-        await new Promise((resolve) => setTimeout(resolve, 700));
-      }
+    const firstArtifact = primaryArtifact(arrayOfRecords(latest.architecture?.artifacts));
+    if (firstArtifact) {
+      appendArtifactMessage(firstArtifact);
     }
-    if (latest.status === "FAILED") throw new Error(latest.error ?? "Repository analysis failed");
-    setReview(latest.review ?? null);
-    if (latest.repository_id) await loadArchitecture(latest.repository_id);
+    setStatus("Analyzed");
   }
 
   async function askQuestion(question: string) {
     if (!repository) return;
+    if (architecture && /architecture|diagram|backend only|database flow|data flow|ai components/i.test(question)) {
+      const firstArtifact = primaryArtifact(arrayOfRecords(architecture.artifacts));
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "rhd",
+          title: "Architecture explanation",
+          content: firstArtifact
+            ? `This architecture is grounded in the generated ${String(firstArtifact.title)} artifact for ${repository.full_name}. It uses synchronized source-tree, code-symbol, issue, PR, release, and indexed evidence. Open the Architecture context tab or download the SVG/Mermaid artifact for the exact graph.`
+            : "I couldn't infer a reliable architecture from the available repository evidence."
+        }
+      ]);
+      return;
+    }
     setStatus("RHD is investigating");
     const response: RHDQueryResponse = await askRHD(repository.id, question, sessionContext);
     setSessionContext(response.context);
@@ -171,18 +225,18 @@ export function ChatWorkspace() {
   async function loadArchitecture(repositoryId: number) {
     const result = await fetchV5Architecture(repositoryId);
     setArchitecture(result);
-    const firstArtifact = arrayOfRecords(result.artifacts)[0];
+    const firstArtifact = primaryArtifact(arrayOfRecords(result.artifacts));
     if (firstArtifact) {
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "artifact",
-          title: String(firstArtifact.title),
-          content: String(firstArtifact.grounding)
-        }
-      ]);
+      appendArtifactMessage(firstArtifact);
     }
+  }
+
+  function appendArtifactMessage(artifact: Record<string, unknown>) {
+    const next = artifactMessage(artifact);
+    setMessages((current) => {
+      if (current.some((message) => message.role === "artifact" && message.title === next.title)) return current;
+      return [...current, next];
+    });
   }
 
   function pushSystem(content: string) {
@@ -251,7 +305,7 @@ export function ChatWorkspace() {
             </button>
             <div>
               <div className="text-sm font-semibold">RHD Conversation</div>
-              <div className="text-xs text-[#737780]">{repository?.full_name ?? "No repository selected"} · {status}</div>
+              <div className="text-xs text-[#737780]">{repository?.full_name ?? "No repository selected"} · {status}{repository?.last_synced_at ? ` · synced ${new Date(repository.last_synced_at).toLocaleString()}` : ""}</div>
             </div>
           </div>
           <button onClick={() => setRightOpen(!rightOpen)} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#dedede] bg-white px-3 text-sm">
@@ -262,13 +316,11 @@ export function ChatWorkspace() {
 
         <div className="flex-1 overflow-auto px-4 py-6">
           <div className="mx-auto flex max-w-3xl flex-col gap-5">
-            {!messages.length ? <Welcome detectedRepository={detectedRepository} onPrompt={setInput} onAnalyze={() => detectedRepository && submit(detectedRepository)} /> : null}
+            {!messages.length ? <Welcome detectedRepository={detectedRepository} repositorySelected={Boolean(repository)} onPrompt={setInput} onAnalyze={() => detectedRepository && submit(detectedRepository)} onDemo={() => submit(demoRepositoryUrl)} /> : null}
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
-            {artifacts.slice(0, 1).map((artifact) => (
-              <ArtifactCard key={String(artifact.id)} artifact={artifact} onDownload={() => downloadSvg(artifact)} />
-            ))}
+            {visibleArtifact ? <ArtifactCard key={String(visibleArtifact.id)} artifact={visibleArtifact} onDownload={() => downloadSvg(visibleArtifact)} /> : null}
           </div>
         </div>
 
@@ -332,7 +384,7 @@ export function ChatWorkspace() {
   );
 }
 
-function Welcome({ detectedRepository, onPrompt, onAnalyze }: { detectedRepository: string | null; onPrompt: (value: string) => void; onAnalyze: () => void }) {
+function Welcome({ detectedRepository, repositorySelected, onPrompt, onAnalyze, onDemo }: { detectedRepository: string | null; repositorySelected: boolean; onPrompt: (value: string) => void; onAnalyze: () => void; onDemo: () => void }) {
   return (
     <div className="pt-10 text-center">
       <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#d7dbe4] bg-white shadow-sm">
@@ -345,9 +397,10 @@ function Welcome({ detectedRepository, onPrompt, onAnalyze }: { detectedReposito
       {detectedRepository ? (
         <button onClick={onAnalyze} className="mt-5 rounded-full bg-[#191b20] px-5 py-2.5 text-sm font-semibold text-white">Analyze {detectedRepository}</button>
       ) : null}
+      <button onClick={onDemo} className="mt-5 rounded-full border border-[#d7dbe4] bg-white px-5 py-2.5 text-sm font-semibold text-[#17191f] shadow-sm">Try Demo Repository</button>
       <div className="mt-7 flex flex-wrap justify-center gap-2">
         {examplePrompts.map((prompt) => (
-          <button key={prompt} onClick={() => onPrompt(prompt)} className="rounded-full border border-[#d7dbe4] bg-white px-3 py-2 text-sm text-[#555b66] shadow-sm hover:border-[#aeb5c3]">
+          <button key={prompt} disabled={!repositorySelected} onClick={() => onPrompt(prompt)} className="rounded-full border border-[#d7dbe4] bg-white px-3 py-2 text-sm text-[#555b66] shadow-sm hover:border-[#aeb5c3] disabled:cursor-not-allowed disabled:opacity-45">
             {prompt}
           </button>
         ))}
@@ -457,10 +510,33 @@ function messageFromAnswer(response: RHDQueryResponse): ChatMessage {
 
 function parseRepositoryInput(value: string): string | null {
   const trimmed = value.trim();
-  const github = trimmed.match(/^https:\/\/github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?\/?$/i);
+  const github = trimmed.match(/^(?:https:\/\/)?github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?\/?$/i);
   const ownerRepo = trimmed.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
   const match = github ?? ownerRepo;
   return match ? `${match[1]}/${match[2].replace(/\.git$/i, "")}` : null;
+}
+
+function artifactMessage(artifact: Record<string, unknown>): ChatMessage {
+  return {
+    id: crypto.randomUUID(),
+    role: "artifact",
+    title: String(artifact.title),
+    content: String(artifact.grounding)
+  };
+}
+
+function repositoryNameFromArchitecture(architecture: Record<string, unknown>) {
+  const repo = recordOf(architecture.repository);
+  return String(repo.full_name ?? "the repository");
+}
+
+function completionText(job: V51AnalysisJob) {
+  const repo = job.repository?.full_name ?? "repository";
+  const summary = job.completion_summary;
+  if (!summary) {
+    return `Analysis complete for ${repo}. Ask me anything about this repository.`;
+  }
+  return `Analysis complete for ${repo}.\n\nHealth: ${summary.health}\nArchitecture: ${summary.architecture}\nCode analyzed: ${summary.code_analyzed}\nIssues analyzed: ${summary.issues_analyzed}\nPRs analyzed: ${summary.prs_analyzed}\n\nAsk me anything about this repository.`;
 }
 
 function recordOf(value: unknown): Record<string, unknown> {
@@ -469,4 +545,8 @@ function recordOf(value: unknown): Record<string, unknown> {
 
 function arrayOfRecords(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
+}
+
+function primaryArtifact(artifacts: Record<string, unknown>[]): Record<string, unknown> | undefined {
+  return artifacts.find((artifact) => String(artifact.artifact_type ?? "").toUpperCase() === "SYSTEM" || /system architecture/i.test(String(artifact.title ?? ""))) ?? artifacts[0];
 }
