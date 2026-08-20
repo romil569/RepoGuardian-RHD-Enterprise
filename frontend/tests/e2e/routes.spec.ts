@@ -9,7 +9,8 @@ const routes = [
   { path: "/mcp", heading: /RHD MCP Tool Matrix/i },
   { path: "/models", heading: /RHD Model Intelligence/i },
   { path: "/automation", heading: /RHD Automation Center/i },
-  { path: "/system", heading: /RHD System/i }
+  { path: "/system", heading: /RHD System/i },
+  { path: "/architecture", heading: /RHD Production Architecture/i }
 ];
 
 test.describe("RepoGuardian responsive routes", () => {
