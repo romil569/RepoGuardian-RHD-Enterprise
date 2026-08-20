@@ -21,5 +21,6 @@ coverage/
 Thumbs.db
 postgres-data/
 .terraform/
+.neon
 *.sqlite3
 *.db
