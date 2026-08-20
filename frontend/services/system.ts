@@ -176,3 +176,27 @@ export function fetchRHDTools(): Promise<{ tools: RHDToolSpec[] }> {
 export function fetchEnterpriseReadiness(): Promise<EnterpriseReadiness> {
   return request<EnterpriseReadiness>("/api/platform/enterprise-readiness");
 }
+
+export function fetchV4MissionControl(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v4/mission-control");
+}
+
+export function fetchV4AgentMesh(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v4/agent-mesh");
+}
+
+export function fetchV4RagPipeline(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v4/rag/pipeline");
+}
+
+export function fetchV4NeuralMap(repositoryId: number): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(`/api/v4/graph/neural-map/${repositoryId}`);
+}
+
+export function fetchV4ModelLab(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v4/models/lab");
+}
+
+export function fetchV4Observatory(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v4/observatory");
+}

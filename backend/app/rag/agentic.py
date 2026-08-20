@@ -100,6 +100,22 @@ def retrieve_agentic_evidence(db: Session, repository_id: int, question: str, to
     }
 
 
+def describe_rag_pipeline() -> dict[str, object]:
+    return {
+        "status": "ACTIVE_DETERMINISTIC",
+        "stages": [
+            {"name": "intent_router", "implementation": "deterministic RHD intent routing", "status": "active"},
+            {"name": "query_planner", "implementation": "strategy planner over BM25, dense token vectors, code, graph, release, PR, issue, and recency retrieval", "status": "active"},
+            {"name": "hybrid_retrieval", "implementation": "repository-scoped indexed documents plus synced issue/PR/release records", "status": "active"},
+            {"name": "score_fusion", "implementation": "retriever-aware score merging with duplicate source collapse", "status": "active"},
+            {"name": "reranking", "implementation": "deterministic evidence ranking; cross-encoder reranking is optional and not reported as active without a configured model", "status": "deterministic"},
+            {"name": "graph_expansion", "implementation": "repository graph and code-document candidates when indexed", "status": "active_when_indexed"},
+            {"name": "grounding_validator", "implementation": "repository isolation, source mix, and evidence coverage critic", "status": "active"},
+        ],
+        "privacy": "Repository content is scoped to one repository and private repository external-model use requires explicit authorization.",
+    }
+
+
 def _retrieve_for_strategy(db: Session, repository_id: int, question: str, strategy: RetrievalStrategy, limit: int) -> list[EvidenceCandidate]:
     if strategy in {RetrievalStrategy.BM25, RetrievalStrategy.DENSE}:
         return [_from_search_result(result, strategy) for result in search_repository_history(db, repository_id, question, top_k=limit)]

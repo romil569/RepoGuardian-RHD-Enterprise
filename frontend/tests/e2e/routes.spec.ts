@@ -2,13 +2,20 @@ import { expect, test } from "@playwright/test";
 
 const routes = [
   { path: "/", marker: /RHD Autonomous Repository Intelligence/i },
+  { path: "/mission-control", heading: /RHD Mission Control/i },
   { path: "/repositories", marker: /romil569\/RepoGuardian-Demo|No repository connected/i },
   { path: "/investigations", marker: /Issues/i },
+  { path: "/intelligence-map", heading: /RHD Intelligence Map/i },
+  { path: "/pull-requests", heading: /RHD Pull Request Intelligence/i },
+  { path: "/incidents", heading: /RHD Incident Intelligence/i },
+  { path: "/code-intelligence", heading: /RHD Code Intelligence/i },
+  { path: "/release-intelligence", heading: /RHD Release Intelligence/i },
   { path: "/review-queue", heading: /Review Queue/i },
   { path: "/audit-log", heading: /Audit Log/i },
   { path: "/mcp", heading: /RHD MCP Tool Matrix/i },
   { path: "/models", heading: /RHD Model Intelligence/i },
   { path: "/automation", heading: /RHD Automation Center/i },
+  { path: "/observatory", heading: /RHD Observatory/i },
   { path: "/system", heading: /RHD System/i },
   { path: "/architecture", heading: /RHD Production Architecture/i }
 ];

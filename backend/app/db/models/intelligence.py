@@ -319,3 +319,119 @@ class RepositoryGraphEdge(Base):
     edge_type: Mapped[str] = mapped_column(String(128), index=True)
     properties: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RHDAgentRun(Base):
+    __tablename__ = "rhd_agent_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int | None] = mapped_column(ForeignKey("repositories.id"), nullable=True, index=True)
+    run_type: Mapped[str] = mapped_column(String(128), index=True)
+    status: Mapped[str] = mapped_column(String(64), default="COMPLETED", index=True)
+    objective: Mapped[str] = mapped_column(Text)
+    policy_decision: Mapped[str] = mapped_column(String(64), default="READ_ONLY")
+    evidence_required: Mapped[bool] = mapped_column(default=True)
+    result: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    steps: Mapped[list["RHDAgentRunStep"]] = relationship(back_populates="run", cascade="all, delete-orphan")
+
+
+class RHDAgentRunStep(Base):
+    __tablename__ = "rhd_agent_run_steps"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("rhd_agent_runs.id"), index=True)
+    agent_name: Mapped[str] = mapped_column(String(128), index=True)
+    step_number: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(64), default="COMPLETED")
+    tool_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    summary: Mapped[str] = mapped_column(Text)
+    evidence_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+
+    run: Mapped[RHDAgentRun] = relationship(back_populates="steps")
+
+
+class ModelProviderTelemetry(Base):
+    __tablename__ = "model_provider_telemetry"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    provider: Mapped[str] = mapped_column(String(128), index=True)
+    model: Mapped[str] = mapped_column(String(255))
+    task: Mapped[str] = mapped_column(String(128), index=True)
+    status: Mapped[str] = mapped_column(String(64), index=True)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class CodeSymbolIndex(Base):
+    __tablename__ = "code_symbol_index"
+    __table_args__ = (UniqueConstraint("repository_id", "file_path", "symbol_name", "start_line", name="uq_code_symbol_index"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    file_path: Mapped[str] = mapped_column(String(1024), index=True)
+    language: Mapped[str] = mapped_column(String(64), index=True)
+    symbol_name: Mapped[str] = mapped_column(String(255), index=True)
+    symbol_type: Mapped[str] = mapped_column(String(64), index=True)
+    start_line: Mapped[int] = mapped_column(Integer)
+    end_line: Mapped[int] = mapped_column(Integer)
+    metadata_json: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class PRRiskAssessment(Base):
+    __tablename__ = "pr_risk_assessments"
+    __table_args__ = (UniqueConstraint("repository_id", "pull_request_id", name="uq_pr_risk_assessment"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    pull_request_id: Mapped[int] = mapped_column(ForeignKey("pull_requests.id"), index=True)
+    github_pr_number: Mapped[int] = mapped_column(Integer, index=True)
+    risk_level: Mapped[str] = mapped_column(String(64), index=True)
+    risk_score: Mapped[float] = mapped_column(Float)
+    factors: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    recommended_reviewers: Mapped[list[str]] = mapped_column(JSON, default=list)
+    test_recommendations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    evidence_refs: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class BlastRadiusFinding(Base):
+    __tablename__ = "blast_radius_findings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    pull_request_id: Mapped[int | None] = mapped_column(ForeignKey("pull_requests.id"), nullable=True, index=True)
+    scope: Mapped[str] = mapped_column(String(128), index=True)
+    impact_level: Mapped[str] = mapped_column(String(64), index=True)
+    affected_components: Mapped[list[str]] = mapped_column(JSON, default=list)
+    evidence_refs: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class IncidentInvestigation(Base):
+    __tablename__ = "incident_investigations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    query: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(64), default="COMPLETED", index=True)
+    hypotheses: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    timeline: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    evidence_refs: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class RAGEvaluationRun(Base):
+    __tablename__ = "rag_evaluation_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int | None] = mapped_column(ForeignKey("repositories.id"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(64), default="COMPLETED", index=True)
+    metrics: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    notes: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

@@ -48,6 +48,8 @@ The local runtime uses SQLite and local repository-filtered token vectors. The a
 
 The RAG retriever filters by `repository_id` before scoring. This protects repository isolation and prevents cross-repository evidence leakage.
 
+RHD v4 adds a read-only agent mesh, task-aware model gateway, PR risk intelligence, blast-radius analysis, incident investigation, code-symbol indexing tables, model telemetry tables, and observability surfaces. These features are additive and preserve the existing public Vercel + Neon architecture. Anonymous public users remain read-only, and external actions continue to require the action recommendation, policy validation, and human approval path.
+
 The investigation orchestrator performs bounded structured stages: load issue, classify, analyze completeness, retrieve repository history, detect duplicates, inspect PRs/releases, detect security signal, analyze release regression, calculate priority, determine escalation, validate evidence, store telemetry, and create an action recommendation.
 
 Prompt 3 intelligence is deterministic by default. `AI_PROVIDER_MODE=auto` reports OpenAI as available only when `OPENAI_API_KEY` is configured; otherwise deterministic intelligence remains active.

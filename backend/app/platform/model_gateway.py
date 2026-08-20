@@ -3,12 +3,26 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from time import perf_counter
 from typing import Protocol
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from app.core.config import settings
+
+
+class ModelTask(StrEnum):
+    INTENT_CLASSIFICATION = "intent_classification"
+    QUERY_PLANNING = "query_planning"
+    EVIDENCE_SUMMARY = "evidence_summary"
+    CODE_EXPLANATION = "code_explanation"
+    PR_RISK = "pr_risk"
+    BLAST_RADIUS = "blast_radius"
+    INCIDENT_HYPOTHESIS = "incident_hypothesis"
+    TEST_RECOMMENDATION = "test_recommendation"
+    POLICY_CHECK = "policy_check"
+    MODEL_EVALUATION = "model_evaluation"
 
 
 @dataclass
@@ -71,12 +85,13 @@ class DeterministicProvider:
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         start = perf_counter()
+        task = normalize_task(request.task)
         return ModelResponse(
             provider=self.name,
             model=self.model,
-            task=request.task,
+            task=task,
             status="OK",
-            content=f"Deterministic fallback handled {request.task}. Use repository tools for factual evidence.",
+            content=f"Deterministic fallback handled {task}. Use repository tools for factual evidence.",
             latency_ms=int((perf_counter() - start) * 1000),
         )
 
@@ -101,9 +116,10 @@ class ConfigOnlyProvider:
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         start = perf_counter()
+        task = normalize_task(request.task)
         if not self.configured():
-            return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Provider is not configured")
-        return ModelResponse(self.name, self.model, request.task, "NOT_IMPLEMENTED", "", int((perf_counter() - start) * 1000), error="Network provider adapter is configured but not executed in this environment")
+            return ModelResponse(self.name, self.model, task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Provider is not configured")
+        return ModelResponse(self.name, self.model, task, "NOT_IMPLEMENTED", "", int((perf_counter() - start) * 1000), error="Network provider adapter is configured but not executed in this environment")
 
 
 @dataclass
@@ -124,10 +140,11 @@ class OllamaProvider:
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         start = perf_counter()
+        task = normalize_task(request.task)
         if settings.is_serverless:
-            return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama is local-development only in managed cloud")
+            return ModelResponse(self.name, self.model, task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama is local-development only in managed cloud")
         if not self.configured():
-            return ModelResponse(self.name, self.model, request.task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama API is not reachable")
+            return ModelResponse(self.name, self.model, task, "NOT_CONFIGURED", "", int((perf_counter() - start) * 1000), error="Ollama API is not reachable")
 
         payload: dict[str, object] = {
             "model": self.model,
@@ -157,7 +174,7 @@ class OllamaProvider:
         return ModelResponse(
             provider=self.name,
             model=self.model,
-            task=request.task,
+            task=task,
             status="OK",
             content=str(body.get("response", "")),
             latency_ms=int((perf_counter() - start) * 1000),
@@ -185,6 +202,12 @@ class ModelGateway:
         return cls(providers=providers, priority=priority)
 
     def generate(self, request: ModelRequest) -> ModelResponse:
+        request = ModelRequest(
+            task=normalize_task(request.task),
+            prompt=request.prompt,
+            repository_visibility=request.repository_visibility,
+            require_json=request.require_json,
+        )
         for provider_name in self.priority:
             provider = self.providers.get(provider_name)
             if not provider:
@@ -219,3 +242,14 @@ class ModelGateway:
                 }
             )
         return rows
+
+
+def normalize_task(task: str) -> str:
+    aliases = {
+        "intent": ModelTask.INTENT_CLASSIFICATION.value,
+        "summary": ModelTask.EVIDENCE_SUMMARY.value,
+        "probe": ModelTask.MODEL_EVALUATION.value,
+    }
+    normalized = aliases.get(task.lower(), task.lower())
+    valid = {item.value for item in ModelTask}
+    return normalized if normalized in valid else task.lower()

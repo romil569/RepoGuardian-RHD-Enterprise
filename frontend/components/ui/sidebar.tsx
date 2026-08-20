@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Bot, ClipboardList, Command, FileClock, GitBranch, Home, ListChecks, RadioTower, SearchCheck, ServerCog, Settings, ShieldCheck, Sparkles, Wrench } from "lucide-react";
+import { Activity, Bot, ClipboardList, Code2, Command, FileClock, GitBranch, GitPullRequest, Home, ListChecks, Map, RadioTower, SearchCheck, ServerCog, Settings, ShieldCheck, Sparkles, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,6 +10,7 @@ const sections: Array<{ title: string; items: Array<{ href: string; label: strin
     title: "Command",
     items: [
       { href: "/", label: "Command Center", icon: Home, detail: "Live repository posture" },
+      { href: "/mission-control", label: "Mission Control", icon: ShieldCheck, detail: "RHD v4 command layer" },
       { href: "/repositories", label: "Repositories", icon: GitBranch, detail: "Sync and semantic search" },
       { href: "/issues", label: "Issues", icon: ListChecks, detail: "Backlog intelligence" },
       { href: "/investigations", label: "Investigations", icon: SearchCheck, detail: "Agent evidence graph" },
@@ -21,6 +22,11 @@ const sections: Array<{ title: string; items: Array<{ href: string; label: strin
     items: [
       { href: "/health", label: "Repository Health", icon: Activity, detail: "Risk dimensions" },
       { href: "/weekly", label: "Weekly Brief", icon: FileClock, detail: "Maintainer briefing" },
+      { href: "/intelligence-map", label: "Intelligence Map", icon: Map, detail: "Graph and Code-RAG" },
+      { href: "/pull-requests", label: "Pull Requests", icon: GitPullRequest, detail: "Risk and blast radius" },
+      { href: "/incidents", label: "Incidents", icon: SearchCheck, detail: "Root-cause timeline" },
+      { href: "/code-intelligence", label: "Code Intelligence", icon: Code2, detail: "Symbols and files" },
+      { href: "/release-intelligence", label: "Releases", icon: RadioTower, detail: "Regression signals" },
       { href: "/evaluation", label: "Evaluation", icon: ShieldCheck, detail: "Feedback quality" },
       { href: "/mcp", label: "MCP", icon: Wrench, detail: "Tool matrix" },
       { href: "/models", label: "Models", icon: Bot, detail: "Provider and ML cards" }
@@ -30,6 +36,7 @@ const sections: Array<{ title: string; items: Array<{ href: string; label: strin
     title: "Operations",
     items: [
       { href: "/automation", label: "Automation", icon: RadioTower, detail: "Event-driven jobs" },
+      { href: "/observatory", label: "Observatory", icon: Activity, detail: "Traces and telemetry" },
       { href: "/system", label: "System", icon: ServerCog, detail: "Runtime foundations" },
       { href: "/audit-log", label: "Audit Log", icon: FileClock, detail: "Safe event trail" },
       { href: "/settings", label: "Settings", icon: Settings, detail: "Policy and runtime" }

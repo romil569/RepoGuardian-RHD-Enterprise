@@ -2,7 +2,7 @@
 
 ## powered by RHD - Repository Health Director
 
-### Autonomous Software Engineering Intelligence with Human-Controlled Execution
+### Autonomous Engineering Intelligence. Evidence-grounded decisions. Human-controlled execution.
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue)](backend)
 [![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688)](backend/app/main.py)
@@ -15,7 +15,7 @@
 [![Tests](https://img.shields.io/badge/tests-pytest%20%7C%20playwright%20%7C%20mcp-brightgreen)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Connect a GitHub repository. RHD investigates its issues, pull requests, source code, releases, engineering risks and repository health using agentic RAG, specialized ML intelligence and evidence-grounded reasoning.
+Connect a GitHub repository. RHD investigates its issues, pull requests, source code, releases, engineering risks and repository health using agentic RAG, deterministic multi-agent orchestration, specialized model governance and evidence-grounded reasoning.
 
 RHD analyzes automatically. RHD recommends automatically. Humans authorize external actions.
 
@@ -28,6 +28,8 @@ FastAPI: https://repoguardian-rhd-api.vercel.app
 API docs: https://repoguardian-rhd-api.vercel.app/docs
 
 Architecture: https://repoguardian-rhd.vercel.app/architecture
+
+RHD v4 Mission Control: https://repoguardian-rhd.vercel.app/mission-control
 
 ## Architecture
 
@@ -59,22 +61,32 @@ Deployment modes:
 | Feature | Status | Notes |
 |---|---|---|
 | RHD Agent | Working | Repository review, Ask RHD, priorities, evidence trace |
-| Agentic RAG v2 | Implemented | Query planner, hybrid retrieval, critic, objective eval metrics |
-| Code-RAG | Partial | Static code scan/symbol graph foundations; deep code embeddings optional |
-| Graph-RAG | Partial | Local graph abstraction and evidence paths; production graph DB not connected |
+| RHD v4 Agent Mesh | Beta | Read-only supervised agents with persisted run/step traces and policy gating |
+| Agentic/Hybrid RAG v3 | Implemented | Query planner, hybrid retrieval, score fusion, deterministic reranking, grounding critic |
+| Code-RAG | Beta | Static code scan/symbol graph foundations; serverless filesystem scanning stays disabled |
+| Graph-RAG | Beta | PostgreSQL-backed graph rows and evidence paths; separate graph database is not required |
 | MCP Server | Implemented | stdio tools/resources/prompts over shared RHD tool registry |
-| PR Risk | Working | PR activity and related PR intelligence foundations |
+| PR Risk | Beta | Deterministic risk, blast-radius, reviewer hints and test recommendations from synced PR/code-symbol evidence |
 | Issue Intelligence | Working | Duplicate, completeness, priority, security, release correlation |
-| Security Signals | Working | Signal detection only; not vulnerability certification |
-| Release Intelligence | Working | Correlation wording, no causation claims |
+| Security Signals | Working | Secret redaction and injection guard; not vulnerability certification |
+| Incident Intelligence | Beta | Repository-scoped timelines and cautious hypotheses; correlation is not causation |
+| Release Intelligence | Working | Temporal correlation wording, no causation claims |
 | Repository Health | Working | Health score, dimensions, weekly brief |
 | Automation | Partial | Event/job foundations; no unrestricted autopilot |
 | Review Queue | Working | Approval, rejection, policy validation |
 | Audit | Working | Safe summaries, no secrets |
-| Model Gateway | Working | Ollama local adapter, cloud config probes, deterministic fallback |
-| ML Registry | Working | Honest model cards; training requires defensible dataset |
+| Model Gateway | Working | Task-aware routing, Ollama local adapter, cloud config probes, deterministic fallback |
+| ML Registry / MLOps | Working | Honest model cards; no custom metrics without defensible datasets |
 | Managed PostgreSQL | Neon validated | Provider-neutral `DATABASE_URL`, pgvector health checks |
 | Serverless Queue | Implemented | Postgres job queue for Vercel; local fallback remains available |
+
+Truthful capability levels:
+
+- `Working`: production-compatible and covered by regression tests.
+- `Beta`: implemented as an additive v4 path and covered by tests, but depends on synced repository data quality.
+- `Partial`: foundation exists, with explicitly documented constraints.
+- `Optional`: requires local/configured provider; never claimed active in public cloud without configuration.
+- `Roadmap`: documented only, not represented as shipped behavior.
 
 ## Quick Start
 
@@ -182,3 +194,5 @@ npm test
 - [Provider Benchmark](docs/provider-benchmark.md)
 - [Industry Readiness](docs/industry-readiness-scorecard.md)
 - [Public Source Audit](docs/public-source-audit.md)
+- [RHD v4 Architecture](docs/rhd-v4-architecture.md)
+- [RHD v4 Demo Script](docs/rhd-v4-demo-script.md)
