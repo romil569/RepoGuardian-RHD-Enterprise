@@ -1,0 +1,23 @@
+{
+  "name": "repoguardian-rhd-mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for RepoGuardian RHD tools, resources, and prompts.",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/server.ts",
+    "test": "tsx tests/client-smoke.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@types/node": "^24.10.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "zod": "^4.2.1"
+  }
+}
