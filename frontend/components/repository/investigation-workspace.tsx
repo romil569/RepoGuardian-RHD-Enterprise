@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { ExternalLink, MessageSquare, PlayCircle, Send } from "lucide-react";
+import { ExternalLink, GitPullRequest, MessageSquare, PackageCheck, PlayCircle, SearchCheck, Send, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { fetchIssueHistory, fetchIssues, fetchRepositories, investigateIssue, submitFeedback } from "@/services/system";
@@ -78,7 +78,10 @@ export function InvestigationWorkspace() {
     <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
       <section className="rounded-md border border-line bg-white p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Issues</h1>
+          <div>
+            <p className="text-xs font-bold uppercase text-signal">Investigation Queue</p>
+            <h1 className="mt-1 text-lg font-semibold">Issues</h1>
+          </div>
           <button onClick={() => selectedIssueId && runInvestigation(selectedIssueId)} disabled={!selectedIssueId || busy} className="inline-flex items-center gap-2 rounded-md bg-signal px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
             <PlayCircle size={16} aria-hidden="true" />
             Investigate
@@ -107,6 +110,20 @@ export function InvestigationWorkspace() {
       <section className="space-y-4">
         {investigation ? (
           <>
+            <Panel title="Agent Investigation Flow">
+              <div className="grid gap-3 md:grid-cols-4">
+                {investigation.investigation_trace.map((step) => (
+                  <div key={step.step_number} className="rounded-md border border-line bg-panel p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-cyan-300/10 text-xs font-bold text-signal">{step.step_number}</span>
+                      <span className="rounded-md border border-line px-2 py-1 text-[0.68rem] font-bold text-slate-600">{step.status}</span>
+                    </div>
+                    <div className="mt-3 text-sm font-semibold">{step.tool_name}</div>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">{step.summary}</p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
             <Panel title="GitHub Issue">
               <a href={investigation.issue.html_url} target="_blank" className="inline-flex items-center gap-2 text-sm font-semibold text-signal">
                 #{investigation.issue.number} {investigation.issue.title}
@@ -134,6 +151,20 @@ export function InvestigationWorkspace() {
               <p className="mt-2 text-sm text-slate-600">{investigation.recommended_action}</p>
             </Panel>
             <div className="grid gap-4 lg:grid-cols-2">
+              <Panel title="Relationship Graph">
+                <div className="space-y-3">
+                  <GraphNode icon={SearchCheck} label="Current Issue" value={`#${investigation.issue.number}`} detail={investigation.classification.category} strong />
+                  {(investigation.duplicate_analysis?.duplicate_candidates ?? investigation.similar_issues).slice(0, 2).map((candidate) => (
+                    <GraphNode key={`duplicate-${candidate.candidate_issue_id}`} icon={Workflow} label="Duplicate Candidate" value={`#${candidate.github_issue_number}`} detail={`${candidate.final_duplicate_score.toFixed(2)} similarity`} />
+                  ))}
+                  {investigation.related_pull_requests.slice(0, 2).map((pr) => (
+                    <GraphNode key={`pr-${pr.number}`} icon={GitPullRequest} label="Related PR" value={`#${pr.number}`} detail={pr.why_relevant} />
+                  ))}
+                  {investigation.recent_releases.slice(0, 2).map((release) => (
+                    <GraphNode key={`release-${release.tag}`} icon={PackageCheck} label="Release Signal" value={release.tag} detail={release.name ?? release.html_url} />
+                  ))}
+                </div>
+              </Panel>
               <Panel title="Duplicate Candidates">
                 <div className="space-y-2">
                   {(investigation.duplicate_analysis?.duplicate_candidates ?? investigation.similar_issues).map((candidate) => (
@@ -243,7 +274,12 @@ export function InvestigationWorkspace() {
           </>
         ) : (
           <Panel title="Investigation">
-            <p className="text-sm text-slate-600">Select a synchronized issue and run an investigation.</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <LoadingStep label="1. Retrieve Context" detail="Searches synchronized issues, PRs, releases, and embeddings." />
+              <LoadingStep label="2. Classify Risk" detail="Scores priority, completeness, duplicate state, and security signal." />
+              <LoadingStep label="3. Prepare Review" detail="Creates human-gated recommendations when policy allows." />
+            </div>
+            <p className="mt-4 text-sm text-slate-600">Select a synchronized issue and run an investigation. The backend returns the verified trace and evidence.</p>
           </Panel>
         )}
       </section>
@@ -256,6 +292,28 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     <div className="rounded-md border border-line bg-white p-4">
       <h2 className="text-sm font-semibold">{title}</h2>
       <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function GraphNode({ icon: Icon, label, value, detail, strong = false }: { icon: React.ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>; label: string; value: string; detail: string; strong?: boolean }) {
+  return (
+    <div className={`rounded-md border p-3 ${strong ? "border-cyan-300/35 bg-cyan-300/10" : "border-line bg-panel"}`}>
+      <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
+        <Icon size={14} className="text-signal" aria-hidden={true} />
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-semibold">{value}</div>
+      <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
+    </div>
+  );
+}
+
+function LoadingStep({ label, detail }: { label: string; detail: string }) {
+  return (
+    <div className="rounded-md border border-line bg-panel p-3">
+      <div className="text-sm font-semibold">{label}</div>
+      <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
     </div>
   );
 }

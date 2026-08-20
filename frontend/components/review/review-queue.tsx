@@ -41,16 +41,25 @@ export function ReviewQueue() {
   }
 
   return (
-    <section className="space-y-5">
+    <section className="min-w-0 space-y-5">
+      <div className="rounded-md border border-line bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-signal">{status}</p>
+          <p className="text-sm font-medium text-signal">Human Approval Console</p>
           <h1 className="mt-2 text-2xl font-semibold">Review Queue</h1>
+          <p className="mt-2 text-sm text-slate-600">{status}. These are policy-gated recommendations, not autonomous writes.</p>
         </div>
-        <button onClick={() => load()} className="inline-flex items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium hover:bg-panel">
+        <button onClick={() => load()} className="inline-flex items-center gap-2 rounded-md border border-line bg-panel px-3 py-2 text-sm font-medium hover:bg-panel">
           <RefreshCw size={16} aria-hidden="true" />
           Refresh
         </button>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-4">
+        <Mini label="Visible Actions" value={items.length} />
+        <Mini label="Pending" value={items.filter((item) => item.status === "PENDING").length} />
+        <Mini label="Security" value={items.filter((item) => item.action_type === "ESCALATE_FOR_SECURITY_REVIEW" || item.security_signal).length} />
+        <Mini label="Failed" value={items.filter((item) => item.status === "FAILED").length} />
+      </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -61,8 +70,9 @@ export function ReviewQueue() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(520px,1fr)_420px]">
-        <div className="overflow-hidden rounded-md border border-line bg-white">
+      <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(520px,1fr)_420px]">
+        <div className="min-w-0 overflow-x-auto overflow-y-hidden rounded-md border border-line bg-white">
+          <div className="min-w-[980px]">
           <div className="grid grid-cols-[90px_1fr_120px_150px_110px] gap-3 border-b border-line bg-panel px-4 py-3 text-xs font-semibold text-slate-600">
             <span>Issue</span>
             <span>Title</span>
@@ -82,9 +92,10 @@ export function ReviewQueue() {
             ))}
             {!items.length ? <div className="p-5 text-sm text-slate-600">No review items yet. Run an investigation to create a recommendation.</div> : null}
           </div>
+          </div>
         </div>
 
-        <aside className="rounded-md border border-line bg-white p-5">
+        <aside className="min-w-0 rounded-md border border-line bg-white p-5">
           {selected ? (
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
@@ -152,6 +163,15 @@ export function ReviewQueue() {
 function Badge({ value }: { value: string }) {
   const strong = ["HIGH", "CRITICAL", "URGENT_REVIEW", "FAILED", "SECURITY_REVIEW"].some((term) => value.includes(term));
   return <span className={`inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold ${strong ? "bg-amber/10 text-amber" : "bg-panel text-slate-700"}`}>{value}</span>;
+}
+
+function Mini({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-md border border-line bg-panel p-3">
+      <div className="text-xs font-bold uppercase text-slate-500">{label}</div>
+      <div className="mt-2 text-xl font-semibold text-ink">{value}</div>
+    </div>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
