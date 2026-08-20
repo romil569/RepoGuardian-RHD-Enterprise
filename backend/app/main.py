@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
+from collections import defaultdict, deque
+from time import monotonic
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.github_webhook import router as github_webhook_router
@@ -18,6 +21,10 @@ from app.api.routes.system import router as system_router
 from app.core.config import settings
 from app.db.session import initialize_database
 from app.services.scheduler import scheduler
+
+
+_rate_buckets: dict[str, deque[float]] = defaultdict(deque)
+_expensive_paths = ("/sync", "/onboard", "/query", "/investigate", "/rag/query")
 
 
 @asynccontextmanager
@@ -38,6 +45,23 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def public_rate_limit(request: Request, call_next):
+        if settings.public_analysis_mode:
+            client = request.client.host if request.client else "unknown"
+            expensive = any(marker in request.url.path for marker in _expensive_paths)
+            limit = settings.rate_limit_expensive_max_requests if expensive else settings.rate_limit_max_requests
+            key = f"{client}:{'expensive' if expensive else 'general'}"
+            now = monotonic()
+            bucket = _rate_buckets[key]
+            while bucket and now - bucket[0] > settings.rate_limit_window_seconds:
+                bucket.popleft()
+            if len(bucket) >= limit:
+                return JSONResponse({"detail": "Rate limit reached. Please wait before running more repository analysis."}, status_code=429)
+            bucket.append(now)
+        return await call_next(request)
+
     app.include_router(health_router)
     app.include_router(system_router, prefix="/api/system", tags=["system"])
     app.include_router(repositories_router)

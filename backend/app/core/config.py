@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     queue_backend: str = "local"
     cors_origins: str = ""
+    public_analysis_mode: bool = False
+    enable_public_write_actions: bool = False
+    rate_limit_window_seconds: int = 60
+    rate_limit_max_requests: int = 120
+    rate_limit_expensive_max_requests: int = 8
     github_token: str | None = None
     openai_api_key: str | None = None
     ai_provider_mode: str = "auto"
@@ -87,6 +92,12 @@ class Settings(BaseSettings):
             raise ValueError("Postgres runtime mode must be local or managed")
         if self.queue_backend not in {"local", "postgres", "redis"}:
             raise ValueError("Queue backend must be local, postgres, or redis")
+        if self.rate_limit_window_seconds < 1:
+            raise ValueError("Rate limit window must be positive")
+        if self.rate_limit_max_requests < 1:
+            raise ValueError("Rate limit max requests must be positive")
+        if self.rate_limit_expensive_max_requests < 1:
+            raise ValueError("Expensive rate limit max requests must be positive")
         if self.job_max_retries < 0:
             raise ValueError("Job max retries cannot be negative")
         if self.job_timeout_seconds < 1:

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import ActionRecommendation, Investigation
 from app.db.session import get_db
+from app.core.config import settings
 from app.services.action_recommendations import (
     ActionWorkflowError,
     approve_recommendation,
@@ -70,6 +71,8 @@ def get_recommendation(recommendation_id: int, db: Session = Depends(get_db)) ->
 
 @router.post("/api/action-recommendations/{recommendation_id}/approve")
 def approve(recommendation_id: int, request: ActorRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if settings.public_analysis_mode and not settings.enable_public_write_actions:
+        raise HTTPException(status_code=403, detail="Public deployment is read-only; action approval is disabled")
     recommendation = require_recommendation(db, recommendation_id)
     try:
         approve_recommendation(db, recommendation, request.actor)
@@ -82,6 +85,8 @@ def approve(recommendation_id: int, request: ActorRequest, db: Session = Depends
 
 @router.post("/api/action-recommendations/{recommendation_id}/reject")
 def reject(recommendation_id: int, request: RejectRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if settings.public_analysis_mode and not settings.enable_public_write_actions:
+        raise HTTPException(status_code=403, detail="Public deployment is read-only; action rejection is disabled")
     recommendation = require_recommendation(db, recommendation_id)
     try:
         reject_recommendation(db, recommendation, request.actor, request.reason)
@@ -94,6 +99,8 @@ def reject(recommendation_id: int, request: RejectRequest, db: Session = Depends
 
 @router.post("/api/action-recommendations/{recommendation_id}/execute")
 def execute(recommendation_id: int, request: ActorRequest, db: Session = Depends(get_db)) -> dict[str, object]:
+    if settings.public_analysis_mode and not settings.enable_public_write_actions:
+        raise HTTPException(status_code=403, detail="Public deployment is read-only; external GitHub writes are disabled")
     recommendation = require_recommendation(db, recommendation_id)
     try:
         execute_recommendation(db, recommendation, actor=request.actor)

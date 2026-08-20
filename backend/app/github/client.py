@@ -6,6 +6,9 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 from app.core.config import settings
 
@@ -202,3 +205,151 @@ class GitHubCliService:
                 "number,title,state,url,body",
             ]
         ) or []
+
+
+@dataclass(frozen=True)
+class GitHubRestService:
+    api_base: str = "https://api.github.com"
+
+    def _headers(self) -> dict[str, str]:
+        headers = {"Accept": "application/vnd.github+json", "User-Agent": "RepoGuardian-RHD"}
+        if settings.github_token:
+            headers["Authorization"] = f"Bearer {settings.github_token}"
+        return headers
+
+    def _request(self, path: str, timeout: int = 30) -> Any:
+        request = Request(f"{self.api_base.rstrip('/')}{path}", headers=self._headers())
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except HTTPError as exc:
+            if exc.code in {401, 403}:
+                raise GitHubAuthenticationError("GitHub API authentication or rate limit blocked the request") from exc
+            if exc.code == 404:
+                raise GitHubNotFoundError("Repository not found")
+            raise GitHubServiceError(f"GitHub API failed with HTTP {exc.code}") from exc
+        except (URLError, TimeoutError) as exc:
+            raise GitHubServiceError("GitHub API request failed") from exc
+
+    def get_repository(self, full_name: str) -> dict[str, Any]:
+        item = self._request(f"/repos/{quote(full_name, safe='/')}")
+        return {
+            "id": item.get("id"),
+            "owner": {"login": (item.get("owner") or {}).get("login")},
+            "name": item.get("name"),
+            "nameWithOwner": item.get("full_name"),
+            "description": item.get("description"),
+            "url": item.get("html_url"),
+            "defaultBranchRef": {"name": item.get("default_branch")},
+            "primaryLanguage": {"name": item.get("language")} if item.get("language") else None,
+            "stargazerCount": item.get("stargazers_count") or 0,
+            "createdAt": item.get("created_at"),
+            "updatedAt": item.get("updated_at"),
+        }
+
+    def get_repository_issues(self, full_name: str, state: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+        rows = self._request(f"/repos/{quote(full_name, safe='/')}/issues?state={state}&per_page={min(limit, 100)}") or []
+        return [
+            {
+                "id": item.get("id"),
+                "number": item.get("number"),
+                "title": item.get("title"),
+                "body": item.get("body"),
+                "state": str(item.get("state", "")).upper(),
+                "author": {"login": (item.get("user") or {}).get("login")},
+                "labels": [{"name": label.get("name")} for label in item.get("labels", [])],
+                "url": item.get("html_url"),
+                "createdAt": item.get("created_at"),
+                "updatedAt": item.get("updated_at"),
+                "closedAt": item.get("closed_at"),
+            }
+            for item in rows
+            if "pull_request" not in item
+        ]
+
+    def get_issue_comments(self, full_name: str, number: int) -> list[dict[str, Any]]:
+        rows = self._request(f"/repos/{quote(full_name, safe='/')}/issues/{number}/comments?per_page=30") or []
+        return [
+            {
+                "id": item.get("id"),
+                "user": (item.get("user") or {}).get("login"),
+                "body": item.get("body"),
+                "html_url": item.get("html_url"),
+                "created_at": item.get("created_at"),
+                "updated_at": item.get("updated_at"),
+            }
+            for item in rows
+        ]
+
+    def get_pull_requests(self, full_name: str, state: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+        rows = self._request(f"/repos/{quote(full_name, safe='/')}/pulls?state={state}&per_page={min(limit, 100)}") or []
+        return [
+            {
+                "id": item.get("id"),
+                "number": item.get("number"),
+                "title": item.get("title"),
+                "body": item.get("body"),
+                "state": str(item.get("state", "")).upper(),
+                "author": {"login": (item.get("user") or {}).get("login")},
+                "url": item.get("html_url"),
+                "createdAt": item.get("created_at"),
+                "updatedAt": item.get("updated_at"),
+                "mergedAt": item.get("merged_at"),
+            }
+            for item in rows
+        ]
+
+    def get_releases(self, full_name: str, limit: int = 30) -> list[dict[str, Any]]:
+        rows = self._request(f"/repos/{quote(full_name, safe='/')}/releases?per_page={min(limit, 100)}") or []
+        return [
+            {
+                "id": item.get("id"),
+                "tagName": item.get("tag_name"),
+                "name": item.get("name"),
+                "body": item.get("body"),
+                "url": item.get("html_url"),
+                "publishedAt": item.get("published_at"),
+            }
+            for item in rows[:limit]
+        ]
+
+    def get_issue(self, full_name: str, number: int) -> dict[str, Any]:
+        item = self._request(f"/repos/{quote(full_name, safe='/')}/issues/{number}")
+        return {
+            "id": item.get("id"),
+            "number": item.get("number"),
+            "title": item.get("title"),
+            "body": item.get("body"),
+            "state": str(item.get("state", "")).upper(),
+            "author": {"login": (item.get("user") or {}).get("login")},
+            "labels": [{"name": label.get("name")} for label in item.get("labels", [])],
+            "url": item.get("html_url"),
+            "createdAt": item.get("created_at"),
+            "updatedAt": item.get("updated_at"),
+            "closedAt": item.get("closed_at"),
+        }
+
+    def get_pull_request(self, full_name: str, number: int) -> dict[str, Any]:
+        rows = [item for item in self.get_pull_requests(full_name, limit=100) if int(item.get("number", 0)) == number]
+        if not rows:
+            raise GitHubNotFoundError("Pull request not found")
+        return rows[0]
+
+    def get_label(self, full_name: str, label: str) -> dict[str, Any]:
+        return self._request(f"/repos/{quote(full_name, safe='/')}/labels/{quote(label, safe='')}")
+
+    def add_issue_label(self, full_name: str, number: int, label: str) -> dict[str, Any]:
+        raise GitHubServiceError("REST public analysis client does not execute write actions")
+
+    def post_issue_comment(self, full_name: str, number: int, body: str) -> dict[str, Any]:
+        raise GitHubServiceError("REST public analysis client does not execute write actions")
+
+
+def github_service() -> GitHubCliService | GitHubRestService:
+    if settings.public_analysis_mode:
+        return GitHubRestService()
+    try:
+        GitHubCliService()._gh()
+        return GitHubCliService()
+    except GitHubServiceError:
+        return GitHubRestService()

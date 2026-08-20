@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import Comment, Issue, PullRequest, Release, Repository
-from app.github.client import GitHubCliService
+from app.github.client import GitHubCliService, GitHubRestService, github_service
 from app.services.indexing import index_repository
 
 
@@ -29,8 +29,8 @@ def label_names(labels: list[dict[str, Any]] | None) -> list[str]:
     return [label.get("name", "") for label in labels or [] if label.get("name")]
 
 
-def connect_repository(db: Session, full_name: str, github: GitHubCliService | None = None) -> tuple[Repository, bool]:
-    github = github or GitHubCliService()
+def connect_repository(db: Session, full_name: str, github: GitHubCliService | GitHubRestService | None = None) -> tuple[Repository, bool]:
+    github = github or github_service()
     metadata = github.get_repository(full_name)
     owner = metadata["owner"]["login"] if isinstance(metadata.get("owner"), dict) else full_name.split("/")[0]
     name = metadata.get("name") or full_name.split("/")[-1]
@@ -128,12 +128,12 @@ def _upsert_comment(db: Session, repository_id: int, issue_id: int, item: dict[s
     return status
 
 
-def sync_repository(db: Session, repository_id: int, github: GitHubCliService | None = None) -> dict[str, object]:
+def sync_repository(db: Session, repository_id: int, github: GitHubCliService | GitHubRestService | None = None) -> dict[str, object]:
     start = perf_counter()
     repo = db.get(Repository, repository_id)
     if not repo:
         raise ValueError("Repository not found")
-    github = github or GitHubCliService()
+    github = github or github_service()
     counts = {
         "issues_added": 0,
         "issues_updated": 0,
