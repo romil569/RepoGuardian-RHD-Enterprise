@@ -18,6 +18,7 @@ from app.api.routes.repositories import router as repositories_router
 from app.api.routes.rhd import router as rhd_router
 from app.api.routes.settings import router as settings_router
 from app.api.routes.system import router as system_router
+from app.api.routes.workspace_v5 import router as workspace_v5_router
 from app.core.config import settings
 from app.db.session import initialize_database
 from app.services.rate_limit import check_rate_limit
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(issues_router)
     app.include_router(investigations_router)
     app.include_router(intelligence_v4_router)
+    app.include_router(workspace_v5_router)
     app.include_router(jobs_router)
     app.include_router(analytics_router)
     app.include_router(action_recommendations_router)

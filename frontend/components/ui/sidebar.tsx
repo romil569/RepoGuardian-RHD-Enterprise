@@ -48,9 +48,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="static flex h-auto w-full shrink-0 flex-col border-b border-line bg-[#070d18]/92 px-4 py-5 backdrop-blur-xl md:sticky md:top-0 md:h-screen md:w-72 md:border-b-0 md:border-r">
+    <aside className="static flex h-auto w-full shrink-0 flex-col border-b border-line bg-[#fbfbfa] px-4 py-5 md:sticky md:top-0 md:h-screen md:w-72 md:border-b-0 md:border-r">
       <div className="flex items-center gap-3 px-2">
-        <div className="grid h-11 w-11 place-items-center rounded-md border border-cyan-300/25 bg-cyan-300/10 text-cyan-200 shadow-lg shadow-cyan-950/40">
+        <div className="grid h-11 w-11 place-items-center rounded-md border border-line bg-white text-signal shadow-sm">
           <ShieldCheck size={22} aria-hidden={true} />
         </div>
         <div>
@@ -83,10 +83,10 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     className={`group flex items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition ${
-                      active ? "border-cyan-300/35 bg-cyan-300/10 text-cyan-100 shadow-lg shadow-cyan-950/20" : "border-transparent text-slate-600 hover:border-line hover:bg-panel hover:text-ink"
+                      active ? "border-[#cfd6e6] bg-white text-ink shadow-sm" : "border-transparent text-slate-600 hover:border-line hover:bg-panel hover:text-ink"
                     }`}
                   >
-                    <item.icon size={17} className={active ? "text-cyan-200" : "text-slate-500 group-hover:text-signal"} aria-hidden={true} />
+                    <item.icon size={17} className={active ? "text-signal" : "text-slate-500 group-hover:text-signal"} aria-hidden={true} />
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{item.label}</span>
                       <span className="block truncate text-[0.68rem] text-slate-500">{item.detail}</span>

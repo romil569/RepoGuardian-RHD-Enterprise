@@ -200,3 +200,15 @@ export function fetchV4ModelLab(): Promise<Record<string, unknown>> {
 export function fetchV4Observatory(): Promise<Record<string, unknown>> {
   return request<Record<string, unknown>>("/api/v4/observatory");
 }
+
+export function fetchV5Workspace(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v5/workspace");
+}
+
+export function fetchV5Architecture(repositoryId: number): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(`/api/v5/repositories/${repositoryId}/architecture`);
+}
+
+export function fetchV5Capabilities(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/v5/capabilities");
+}

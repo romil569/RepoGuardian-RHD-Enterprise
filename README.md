@@ -31,6 +31,8 @@ Architecture: https://repoguardian-rhd.vercel.app/architecture
 
 RHD v4 Mission Control: https://repoguardian-rhd.vercel.app/mission-control
 
+RHD v5 Chat Workspace: https://repoguardian-rhd.vercel.app
+
 ## Architecture
 
 ```mermaid
@@ -61,6 +63,10 @@ Deployment modes:
 | Feature | Status | Notes |
 |---|---|---|
 | RHD Agent | Working | Repository review, Ask RHD, priorities, evidence trace |
+| RHD v5 Chat Workspace | Beta | Chat-first home experience with conversations, composer, side context, tools, artifacts, and light design system |
+| Deterministic Architecture Artifacts | Beta | Mermaid/SVG diagrams generated from synchronized repository evidence; metadata-only when code evidence is weak |
+| Multimodal Attachment Readiness | Partial | Upload UI and capability reporting; direct image understanding requires configured multimodal provider |
+| Voice Controls | Partial | Optional browser UI affordance; text workflow remains primary |
 | RHD v4 Agent Mesh | Beta | Read-only supervised agents with persisted run/step traces and policy gating |
 | Agentic/Hybrid RAG v3 | Implemented | Query planner, hybrid retrieval, score fusion, deterministic reranking, grounding critic |
 | Code-RAG | Beta | Static code scan/symbol graph foundations; serverless filesystem scanning stays disabled |
@@ -196,3 +202,4 @@ npm test
 - [Public Source Audit](docs/public-source-audit.md)
 - [RHD v4 Architecture](docs/rhd-v4-architecture.md)
 - [RHD v4 Demo Script](docs/rhd-v4-demo-script.md)
+- [RHD v5 Chat Workspace](docs/rhd-v5-chat-workspace.md)

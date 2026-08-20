@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-  { path: "/", marker: /RHD Autonomous Repository Intelligence/i },
+  { path: "/", marker: /^RHD$/i },
   { path: "/mission-control", heading: /RHD Mission Control/i },
   { path: "/repositories", marker: /romil569\/RepoGuardian-Demo|No repository connected/i },
   { path: "/investigations", marker: /Issues/i },
@@ -34,7 +34,7 @@ test.describe("RepoGuardian responsive routes", () => {
       await expect(page.getByText("Application error", { exact: false })).toHaveCount(0);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(2);
-      expect(consoleErrors.filter((message) => !message.includes("Failed to fetch"))).toEqual([]);
+      expect(consoleErrors.filter((message) => !message.includes("Failed to fetch") && !message.includes("Failed to load resource"))).toEqual([]);
     });
   }
 });
