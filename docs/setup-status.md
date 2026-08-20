@@ -45,6 +45,22 @@ Generated: 2026-08-20
 - Evidence validation: implemented and tested
 - AI provider: not configured; deterministic tools are active
 
+## Prompt 3 Backend Status
+
+- Alembic migration head: `0003_prompt3_feedback`
+- Human feedback table: implemented and migrated in SQLite fallback
+- Advanced duplicate detection: implemented and live-tested
+- Context-aware completeness: implemented and live-tested
+- Advanced priority scoring: implemented and live-tested
+- Security signal detection: implemented and live-tested
+- Release regression analysis: implemented and live-tested
+- Related PR intelligence: implemented and live-tested
+- Repository health endpoint: implemented and live-tested
+- Weekly brief endpoint: implemented and live-tested
+- Evaluation endpoint: implemented and live-tested
+- Policy settings endpoint: implemented and live-tested; exposes only non-secret thresholds/settings
+- Operational telemetry: returned from investigation API
+
 ## Prompt 2 Frontend Status
 
 - Dependencies installed
@@ -55,6 +71,13 @@ Generated: 2026-08-20
 - Routes generated: `/`, `/dashboard`, `/repositories`, `/investigations`, `/health`, `/settings`
 - Repository page now supports real connect/sync/search workflows
 - Investigation page now supports real issue selection and investigation results
+
+## Prompt 3 Frontend Status
+
+- Overview dashboard shows live repository health, weekly brief, repository metadata, and runtime status
+- Repository Health page shows health score, dimensions, distributions, backlog trend, weekly brief, and evaluation status
+- Investigation page shows duplicate candidates, security signal, release-regression signal, related PRs, priority signals, telemetry, evidence, and feedback controls
+- Settings page shows non-secret runtime and policy configuration
 
 ## Database Status
 
@@ -81,11 +104,28 @@ Generated: 2026-08-20
   - `#6 Application freezes when uploading large images`: `PERFORMANCE`, `HIGH`, `POSSIBLE_DUPLICATE`
   - `#8 File upload stopped working after v1.2.0`: `BUG`, `HIGH`, `POSSIBLE_DUPLICATE`
 
+## Prompt 3 Live Demo Results
+
+- Connected repository: `romil569/RepoGuardian-Demo`
+- Idempotent sync: 14 issues updated, 4 pull requests updated, 3 releases updated, 21 documents indexed
+- Health endpoint: score `60`, state `WATCH`
+- Weekly brief: `Repository health is WATCH with score 60.`
+- Feedback API: POST and GET verified on live investigation feedback
+- Evaluation endpoint: initially `INSUFFICIENT_LABELED_DATA`; after three live feedback labels returned `OK` with agreement rate `1.0`
+- Investigation scenarios tested:
+  - `#1 Login fails after version 2.1`: `BUG`, completeness `66`, duplicate `POSSIBLE_DUPLICATE` score `0.7111`, release `POSSIBLE_POST_RELEASE_REGRESSION`, priority `HIGH`, escalation `POSSIBLE_DUPLICATE`, 6 evidence items, 12 steps
+  - `#3 Application is not working`: `BUG`, completeness `0`, duplicate `UNLIKELY_DUPLICATE`, priority `LOW`, escalation `NEEDS_INFORMATION`, 6 evidence items, 12 steps
+  - `#5 Typo in installation section of README`: `DOCUMENTATION`, completeness `100`, duplicate `UNLIKELY_DUPLICATE`, priority `LOW`, escalation `NORMAL_QUEUE`, 6 evidence items, 12 steps
+  - `#6 Application freezes when uploading large images`: `PERFORMANCE`, completeness `83`, duplicate `POSSIBLE_DUPLICATE` score `0.4537`, priority `MEDIUM`, escalation `POSSIBLE_DUPLICATE`, 6 evidence items, 12 steps
+  - `#8 File upload stopped working after v1.2.0`: `BUG`, completeness `66`, duplicate `VERY_LIKELY_DUPLICATE` score `0.7603`, release `POSSIBLE_POST_RELEASE_REGRESSION`, priority `HIGH`, escalation `POSSIBLE_DUPLICATE`, 6 evidence items, 12 steps
+  - `#4 API key appears in application logs`: `SECURITY_RELATED`, completeness `100`, security `HIGH_SECURITY_SIGNAL`, priority `HIGH`, escalation `URGENT_REVIEW`, 6 evidence items, 12 steps
+
 ## Safety Checks
 
 - `.env`, `backend/.env`, and `frontend/.env.local` are ignored by Git
 - `.env.example` files contain no real credentials
 - Secret-pattern scan found no GitHub token or OpenAI API key patterns in tracked source candidates
+- Prompt 3 secret-pattern scan found no GitHub token or OpenAI API key patterns in source candidates
 - Sample security issue uses fictional wording and does not include a real credential
 - GitHub write operations in this run targeted only `romil569/RepoGuardian-Demo`
 
@@ -93,6 +133,7 @@ Generated: 2026-08-20
 
 - Backend import check
 - Backend `pytest`: 5 passed
+- Backend Prompt 3 `pytest`: 17 passed
 - FastAPI `/health`
 - FastAPI `/api/system/status`
 - Alembic migration head check
@@ -105,6 +146,9 @@ Generated: 2026-08-20
 - Frontend lint
 - Frontend typecheck
 - Frontend production build
+- Prompt 3 frontend lint
+- Prompt 3 frontend typecheck
+- Prompt 3 frontend production build
 - Git ignore safety check
 - Secret-pattern scan
 - GitHub repository/count verification

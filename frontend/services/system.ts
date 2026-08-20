@@ -1,5 +1,18 @@
 import { API_BASE_URL } from "@/lib/api";
-import type { Investigation, Issue, PullRequest, Release, Repository, SearchResult, SystemStatus } from "@/types/system";
+import type {
+  Evaluation,
+  FeedbackResponse,
+  Investigation,
+  Issue,
+  PolicySettings,
+  PullRequest,
+  Release,
+  Repository,
+  RepositoryHealth,
+  SearchResult,
+  SystemStatus,
+  WeeklyBrief
+} from "@/types/system";
 
 export async function fetchSystemStatus(): Promise<SystemStatus> {
   const response = await fetch(`${API_BASE_URL}/api/system/status`, { cache: "no-store" });
@@ -52,4 +65,27 @@ export function searchRepository(repositoryId: number, query: string): Promise<S
 
 export function investigateIssue(issueId: number): Promise<Investigation> {
   return request<Investigation>(`/api/issues/${issueId}/investigate`, { method: "POST" });
+}
+
+export function fetchRepositoryHealth(repositoryId: number): Promise<RepositoryHealth> {
+  return request<RepositoryHealth>(`/api/repositories/${repositoryId}/health`);
+}
+
+export function fetchWeeklyBrief(repositoryId: number): Promise<WeeklyBrief> {
+  return request<WeeklyBrief>(`/api/repositories/${repositoryId}/brief/weekly`);
+}
+
+export function fetchEvaluation(repositoryId: number): Promise<Evaluation> {
+  return request<Evaluation>(`/api/repositories/${repositoryId}/evaluation`);
+}
+
+export function fetchPolicySettings(): Promise<PolicySettings> {
+  return request<PolicySettings>("/api/settings/policy");
+}
+
+export function submitFeedback(
+  investigationId: number,
+  body: { target_type: string; original_value: string; feedback_status: string; corrected_value?: string; comment?: string }
+): Promise<FeedbackResponse> {
+  return request<FeedbackResponse>(`/api/investigations/${investigationId}/feedback`, { method: "POST", body: JSON.stringify(body) });
 }

@@ -21,11 +21,19 @@ RepoGuardian is an industry-oriented AI/ML hackathon project for an agentic open
 - `GET /api/repositories/{id}/releases`
 - `POST /api/repositories/{id}/search`
 - `POST /api/issues/{id}/investigate`
+- `GET /api/repositories/{id}/health`
+- `GET /api/repositories/{id}/brief/weekly`
+- `GET /api/repositories/{id}/evaluation`
+- `POST /api/investigations/{id}/feedback`
+- `GET /api/investigations/{id}/feedback`
+- `GET /api/settings/policy`
 - Repository, issue, PR, release, document, investigation, evidence, escalation, and trace models
+- Human feedback model for labeled maintainer corrections
 - GitHub CLI-backed local integration
 - Project-aware retrieval with repository filtering
-- Multi-step deterministic investigation pipeline
-- Frontend repository sync/search and investigation UI
+- Multi-step deterministic investigation pipeline with advanced duplicate, completeness, priority, security, release-regression, related PR, telemetry, and escalation signals
+- Repository health score, weekly brief, and evaluation metrics
+- Frontend repository sync/search, investigation, feedback, health, weekly brief, evaluation, and settings UI
 - Docker Compose configuration for local PostgreSQL and pgvector
 
 ## Demo Repository
@@ -123,7 +131,9 @@ npm run build
 5. Sync the repository.
 6. Search for repository history such as `authentication fails after latest update`.
 7. Go to Investigations and run analysis on synchronized issues.
+8. Review duplicate, security, regression, priority, telemetry, evidence, and feedback panels.
+9. Go to Repository Health for the score, weekly brief, and evaluation status.
 
 ## Next Development Stages
 
-Future stages can add a GitHub App, webhooks, live LLM provider calls, pgvector production indexing, background workers, richer policy engines, audit logs, and authenticated maintainer workflows.
+Future stages can add a GitHub App, webhooks, live LLM provider calls, pgvector production indexing, background workers, richer policy engines, audit logs, authenticated maintainer workflows, notification routing, and organization-wide benchmarking.

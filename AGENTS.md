@@ -1,6 +1,6 @@
 # RepoGuardian Agent Notes
 
-RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation.
+RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements the compulsory hackathon pipeline: GitHub sync, repository-scoped indexing, project-aware RAG, deterministic agent tools, multi-step issue investigation, selective escalation, and evidence validation. Prompt 3 extends that pipeline with advanced duplicate detection, context-aware completeness, priority scoring, security signals, release-regression analysis, related PR intelligence, repository health, weekly brief, human feedback, evaluation metrics, and telemetry.
 
 ## Architecture
 
@@ -11,8 +11,12 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - `backend/app/rag/retriever.py`: repository-filtered local vector/keyword retrieval fallback.
 - `backend/app/agents/tools/analysis.py`: structured deterministic tools for classification, completeness, priority, escalation, similar issues, PRs, and releases.
 - `backend/app/agents/workflows/investigation.py`: multi-step orchestrator with safe operational trace.
+- `backend/app/services/advanced_intelligence.py`: deterministic Prompt 3 intelligence engines and repository analytics.
+- `backend/app/api/routes/analytics.py`: health, weekly brief, and evaluation endpoints.
+- `backend/app/api/routes/investigations.py`: human feedback endpoints for completed investigations.
+- `backend/app/api/routes/settings.py`: non-secret policy settings endpoint.
 - `backend/app/services/evidence.py`: strict evidence source validation.
-- `frontend/`: Next.js, TypeScript, Tailwind CSS, repository sync/search UI and investigation UI.
+- `frontend/`: Next.js, TypeScript, Tailwind CSS, repository sync/search UI, investigation UI, health dashboards, feedback controls, and non-secret settings panels.
 - `infrastructure/`: database initialization and future deployment assets.
 - `docs/`: setup reports and architecture notes.
 - `demo/`: harmless local demo source material.
@@ -31,6 +35,10 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Sync repository: `POST /api/repositories/{id}/sync`
 - Search repository history: `POST /api/repositories/{id}/search`
 - Investigate issue: `POST /api/issues/{id}/investigate`
+- Repository health: `GET /api/repositories/{id}/health`
+- Weekly brief: `GET /api/repositories/{id}/brief/weekly`
+- Evaluation: `GET /api/repositories/{id}/evaluation`
+- Feedback: `POST /api/investigations/{id}/feedback`
 
 ## Data Backends
 
@@ -49,3 +57,4 @@ RepoGuardian is an agentic open-source maintainer assistant. Prompt 2 implements
 - Never commit `.env`, tokens, API keys, browser cookies, or credentials.
 - Preserve repository isolation and run relevant tests after meaningful changes.
 - Live AI provider calls require `OPENAI_API_KEY`; without it, deterministic tools must return `AI provider not configured` behavior rather than fabricating AI output.
+- Policy settings exposed to the frontend must stay non-secret.

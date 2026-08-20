@@ -6,17 +6,22 @@ from time import perf_counter
 from sqlalchemy.orm import Session
 
 from app.agents.tools.analysis import (
-    calculate_priority,
-    check_issue_completeness,
     classify_issue,
-    determine_escalation,
     get_recent_releases,
-    get_related_pull_requests,
-    search_similar_issues,
 )
 from app.core.config import settings
 from app.db.models import AgentExecutionStep, EscalationDecision, Investigation, InvestigationEvidence, Issue
 from app.rag.retriever import search_repository_history
+from app.services.advanced_intelligence import (
+    advanced_escalation,
+    analyze_completeness,
+    analyze_duplicates,
+    analyze_priority,
+    analyze_related_pull_requests,
+    analyze_release_regression,
+    analyze_security,
+    compute_telemetry,
+)
 from app.services.evidence import filter_valid_evidence
 
 
@@ -50,8 +55,8 @@ class InvestigationOrchestrator:
         self._step("classify_issue", "SUCCESS", str(classification["category"]), classification, start)
 
         start = perf_counter()
-        completeness = check_issue_completeness(issue, str(classification["category"]))
-        self._step("check_issue_completeness", "SUCCESS", f"score {completeness['score']}", completeness, start)
+        completeness = analyze_completeness(issue, str(classification["category"]))
+        self._step("check_issue_completeness", "SUCCESS", f"score {completeness['completeness_score']}", completeness, start)
 
         query = f"{issue.title}\n{issue.body or ''}"
         start = perf_counter()
@@ -59,12 +64,13 @@ class InvestigationOrchestrator:
         self._step("search_repository_history", "SUCCESS", f"{len(context)} results", {"count": len(context)}, start)
 
         start = perf_counter()
-        similar = search_similar_issues(self.db, issue.repository_id, issue, limit=3)
-        duplicate_probability = max([float(item["relevance_score"]) for item in similar], default=0.0)
-        self._step("search_similar_issues", "SUCCESS", f"{len(similar)} candidates", {"duplicate_probability": duplicate_probability}, start)
+        duplicate_analysis = analyze_duplicates(self.db, issue, limit=5)
+        similar = duplicate_analysis["duplicate_candidates"]
+        duplicate_probability = float(duplicate_analysis["top_score"])
+        self._step("search_similar_issues", "SUCCESS", f"{len(similar)} candidates", duplicate_analysis, start)
 
         start = perf_counter()
-        related_prs = get_related_pull_requests(self.db, issue.repository_id, query)
+        related_prs = analyze_related_pull_requests(self.db, issue)
         self._step("get_related_pull_requests", "SUCCESS", f"{len(related_prs)} related PRs", {"count": len(related_prs)}, start)
 
         start = perf_counter()
@@ -72,17 +78,19 @@ class InvestigationOrchestrator:
         self._step("get_recent_releases", "SUCCESS", f"{len(releases)} releases", {"count": len(releases)}, start)
 
         start = perf_counter()
-        priority = calculate_priority(issue, str(classification["category"]), duplicate_probability, releases)
+        security = analyze_security(issue)
+        self._step("detect_security_signal", "SUCCESS", str(security["security_state"]), security, start)
+
+        start = perf_counter()
+        release_regression = analyze_release_regression(self.db, issue, related_prs)
+        self._step("analyze_release_regression", "SUCCESS", str(release_regression["regression_state"]), release_regression, start)
+
+        start = perf_counter()
+        priority = analyze_priority(issue, str(classification["category"]), duplicate_analysis, completeness, security, release_regression)
         self._step("calculate_priority", "SUCCESS", str(priority["level"]), priority, start)
 
         start = perf_counter()
-        escalation = determine_escalation(
-            str(classification["category"]),
-            int(completeness["score"]),
-            duplicate_probability,
-            str(priority["level"]),
-            query.lower(),
-        )
+        escalation = advanced_escalation(duplicate_analysis, completeness, security, release_regression, priority)
         self._step("determine_escalation", "SUCCESS", str(escalation["decision"]), escalation, start)
 
         raw_evidence = [
@@ -98,7 +106,11 @@ class InvestigationOrchestrator:
             }
             for item in context[:4]
         ]
-        for pr in related_prs[:2]:
+        pr_by_number = {pr.github_pr_number: pr for pr in issue.repository.pull_requests}
+        for pr_item in related_prs[:2]:
+            pr = pr_by_number.get(int(pr_item["number"]))
+            if not pr:
+                continue
             raw_evidence.append(
                 {
                     "repository_id": pr.repository_id,
@@ -107,8 +119,8 @@ class InvestigationOrchestrator:
                     "github_number": pr.github_pr_number,
                     "title": pr.title,
                     "source_url": pr.html_url,
-                    "retrieval_score": 0.5,
-                    "why_relevant": "Pull request text overlaps with the investigated issue.",
+                    "retrieval_score": float(pr_item["relevance_score"]),
+                    "why_relevant": str(pr_item["why_relevant"]),
                 }
             )
         valid_evidence, rejected = filter_valid_evidence(self.db, raw_evidence)
@@ -154,21 +166,29 @@ class InvestigationOrchestrator:
         issue.analysis_status = "ANALYZED"
         self.db.commit()
         self.db.refresh(investigation)
+        telemetry = compute_telemetry(investigation, len(valid_evidence))
 
         return {
+            "investigation_id": investigation.id,
             "issue": issue_to_dict(issue),
             "classification": classification,
             "completeness": completeness,
+            "completeness_analysis": completeness,
+            "duplicate_analysis": duplicate_analysis,
             "similar_issues": similar,
             "repository_context": [result.__dict__ for result in context],
-            "related_pull_requests": [pr_to_dict(pr) for pr in related_prs],
+            "related_pull_requests": related_prs,
             "recent_releases": [release_to_dict(release) for release in releases],
+            "security_analysis": security,
+            "release_regression_analysis": release_regression,
             "priority": priority,
+            "priority_analysis": priority,
             "escalation": escalation,
             "evidence": valid_evidence,
             "recommended_action": investigation.recommended_action,
             "summary": investigation.summary,
             "investigation_trace": self.trace,
+            "telemetry": telemetry,
         }
 
 

@@ -181,3 +181,18 @@ class AgentExecutionStep(Base):
     result: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
 
     investigation: Mapped[Investigation] = relationship(back_populates="steps")
+
+
+class HumanFeedback(Base):
+    __tablename__ = "human_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), index=True)
+    issue_id: Mapped[int] = mapped_column(ForeignKey("issues.id"), index=True)
+    investigation_id: Mapped[int | None] = mapped_column(ForeignKey("investigations.id"), nullable=True, index=True)
+    target_type: Mapped[str] = mapped_column(String(64))
+    original_value: Mapped[str] = mapped_column(String(128))
+    feedback_status: Mapped[str] = mapped_column(String(64))
+    corrected_value: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

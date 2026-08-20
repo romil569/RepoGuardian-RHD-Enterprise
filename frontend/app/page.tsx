@@ -1,9 +1,7 @@
 import { Sidebar } from "@/components/ui/sidebar";
-import { StatusPanel } from "@/components/dashboard/status-panel";
+import { OverviewDashboard } from "@/components/dashboard/overview-dashboard";
 
 export default function Page() {
-  const demoRepository = process.env.NEXT_PUBLIC_DEMO_GITHUB_REPOSITORY;
-
   return (
     <main className="flex min-h-screen">
       <Sidebar />
@@ -15,7 +13,7 @@ export default function Page() {
             A maintainer-oriented foundation for repository health, issue triage, and safe demo-only automation.
           </p>
           <div className="mt-7">
-            <StatusPanel demoRepository={demoRepository} />
+            <OverviewDashboard />
           </div>
         </div>
       </section>
